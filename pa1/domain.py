@@ -1,7 +1,7 @@
 from urllib.parse import urlparse
 
 
-#Get domain name (example.com)
+#Get domain name (www.gov.si)
 def get_domain_name(url):
     try:
         results = get_sub_domain_name(url).split('.') # -> restults je list : name example com
@@ -12,7 +12,7 @@ def get_domain_name(url):
 
 
 
-#Get sub domain name (name.example.com)
+#Get sub domain name (www.evem.gov.si)
 def get_sub_domain_name(url):
     try:
         return urlparse(url).netloc
@@ -20,7 +20,7 @@ def get_sub_domain_name(url):
         return ''
 
 
-print(get_domain_name('https://mobile.email.ana.thenewboston.com/apps/getmefunky'))
+#print(get_domain_name('https://www.evem.gov.si/'))
 
 
 
