@@ -10,11 +10,11 @@ def create_project_dir(directory):
 
 #Create queue and crawled files (if not created)
 
-def create_data_files(project_name, base_url):
+def create_data_files(project_name, base_url1,base_url2,base_url3,base_url4):
     queue = os.path.join(project_name , 'queue.txt')
     crawled = os.path.join(project_name,"crawled.txt")
     if not os.path.isfile(queue):
-        write_file(queue, base_url) #Base url is the first line
+        write_file(queue, base_url1 + '\n' + base_url2 + '\n' + base_url3 + '\n' + base_url4) #Base url is the first line
     if not os.path.isfile(crawled):
         write_file(crawled, '') #Crawled list is empty
 

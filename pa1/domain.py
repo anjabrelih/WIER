@@ -20,7 +20,7 @@ def get_sub_domain_name(url):
         return ''
 
 
-print(get_domain_name('https://mobile.email.ana.thenewboston.com/apps/getmefunky'))
+#print(get_domain_name('https://mobile.email.ana.thenewboston.com/apps/getmefunky'))
 
 
 
