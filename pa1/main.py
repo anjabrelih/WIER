@@ -8,17 +8,25 @@ from general import *
 import time
 
 
-PROJECT_NAME = 'FRIki Pajek'
-HOMEPAGE = 'https://www.gov.si/'
-DOMAIN_NAME = get_domain_name(HOMEPAGE)
+PROJECT_NAME = 'Pajek Oskar'
+HOMEPAGE1 = 'https://www.gov.si/'
+HOMEPAGE2 = 'http://evem.gov.si/evem/drzavljani/zacetna.evem'
+HOMEPAGE3 = 'https://e-uprava.gov.si/'
+HOMEPAGE4 = 'https://www.e-prostor.gov.si/'
+
+
+DOMAIN_NAME1 = get_domain_name(HOMEPAGE1)
+DOMAIN_NAME2 = get_domain_name(HOMEPAGE2)
+DOMAIN_NAME3 = get_domain_name(HOMEPAGE3)
+DOMAIN_NAME4 = get_domain_name(HOMEPAGE4)
 QUEUE_FILE = PROJECT_NAME + '/queue.txt'
 CRAWLED_FILE = PROJECT_NAME + '/crawled.txt'
 NUMBER_OF_THREADS = 5     #ŠTEVILO NITI
 TIMEOUT = 5
 queue = Queue()   #THREAD QUEUE
 
+Spider(PROJECT_NAME, HOMEPAGE1,HOMEPAGE2,HOMEPAGE3,HOMEPAGE4, DOMAIN_NAME1,DOMAIN_NAME2,DOMAIN_NAME3,DOMAIN_NAME4)
 
-Spider(PROJECT_NAME, HOMEPAGE, DOMAIN_NAME)
 
 
 
