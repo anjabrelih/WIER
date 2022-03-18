@@ -1,4 +1,5 @@
 from urllib.request import urlopen
+from webbrowser import get
 from link_finder import LinkFinder
 from general import * #import all
 from domain import *
@@ -8,36 +9,22 @@ class Spider:
 
     #Class variables (shared among all instances/spiders)
     project_name = ''
-    base_url1 = ''
-    base_url2 = ''
-    base_url3 = ''
-    base_url4 = ''
-    domain_name1 = ''
-    domain_name2 = ''
-    domain_name3 = ''
-    domain_name4 = ''
     queue_file = ''   #text file saved on hard drive
     crawled_file = ''  #text file saved on hard drive
+    DOMAIN_file = ''
     queue = set()      #stored on RAM -> faster
     crawled = set()     #stored on RAM -> faster
+    domain = set()
 
-    def __init__(self, project_name, base_url1,base_url2,base_url3,base_url4, domain_name1,domain_name2,domain_name3,domain_name4):
+    def __init__(self, project_name,base_url1):
         Spider.project_name = project_name
         Spider.base_url1 = base_url1            #SHARED INFORMATION
-        Spider.base_url2 = base_url2
-        Spider.base_url3 = base_url3
-        Spider.base_url4 = base_url4
-        Spider.domain_name1 = domain_name1
-        Spider.domain_name2 = domain_name2
-        Spider.domain_name3 = domain_name3
-        Spider.domain_name4 = domain_name4
         Spider.queue_file = Spider.project_name + '/queue.txt'
         Spider.crawled_file = Spider.project_name + '/crawled.txt'
+        Spider.DOMAIN_file = Spider.project_name + '/DOMAIN.txt'
         self.boot()
         self.crawl_page('First Spider', Spider.base_url1) #prvi pajek odpre začetne strani
-        self.crawl_page('First Spider', Spider.base_url2)
-        self.crawl_page('First Spider', Spider.base_url3)
-        self.crawl_page('First Spider', Spider.base_url4)
+
 
  #Z začetka uporabimo samo enega pajka ker imamo v queue.txt samo en (štiri) link
  #Ko naberemo več linkov lahko zaženemo še ostale pajke       
@@ -45,9 +32,14 @@ class Spider:
     @staticmethod
     def boot():
         create_project_dir(Spider.project_name)
-        create_data_files(Spider.project_name, Spider.base_url1,Spider.base_url2,Spider.base_url3,Spider.base_url4)
+        create_data_files(Spider.project_name, Spider.base_url1)
         Spider.queue = file_to_set(Spider.queue_file)
         Spider.crawled = file_to_set(Spider.crawled_file)
+        Spider.domain = file_to_set(Spider.DOMAIN_file)
+        #Spider.queue.add('https://www.gov.si/') se naredi že na začetku
+        Spider.queue.add('http://evem.gov.si/evem/drzavljani/zacetna.evem')
+        Spider.queue.add('https://e-uprava.gov.si/')
+        Spider.queue.add('https://www.e-prostor.gov.si/')
         
 
     @staticmethod
@@ -69,7 +61,7 @@ class Spider:
             if 'text/html' in response.getheader('Content-Type'):
                 html_bytes = response.read()
                 html_string = html_bytes.decode("utf-8")
-            finder = LinkFinder(Spider.base_url1,Spider.base_url2,Spider.base_url3,Spider.base_url4, page_url)
+            finder = LinkFinder(Spider.base_url1)
             finder.feed(html_string)
         except Exception as e:
             print(str(e))
@@ -80,20 +72,20 @@ class Spider:
     @staticmethod
     def add_links_to_queue(links):
         for url in links:
-            if (url in Spider.queue) or (url in Spider.crawled):
+            if (url in Spider.queue) or (url in Spider.crawled): #Preverimo duplikate linkov
                 continue
-            if Spider.domain_name1 != get_domain_name(url):
-                continue
-            if Spider.domain_name2 != get_domain_name(url):
-                continue
-            if Spider.domain_name3 != get_domain_name(url):
-                continue
-            if Spider.domain_name4 != get_domain_name(url):
-                continue
-            Spider.queue.add(url)
+            if 'gov.si' in url : #Pajek ne shranjuje linkov, ki ne vsebujejo gov.si
+                Spider.queue.add(url)
+
+    @staticmethod
+    def add_domain(url):
+        sub_domain = get_sub_domain_name(url)
+        if sub_domain not in Spider.domain:
+            Spider.domain.add(sub_domain)
 
 
     @staticmethod
     def update_files():
         set_to_file(Spider.queue, Spider.queue_file)
         set_to_file(Spider.crawled, Spider.crawled_file)
+        set_to_file(Spider.domain, Spider.DOMAIN_file)
