@@ -4,13 +4,17 @@ from spider import Spider
 from domain import *
 from general import *
 import time
+import sys
 
 
 PROJECT_NAME = 'Pajek Oskar'
-HOMEPAGE1 = 'https://www.gov.si/'
 
 
 #DOMAIN_NAME1 = get_domain_name(HOMEPAGE1)
+SEED1 = ('https://www.gov.si/')
+SEED2 = ('http://evem.gov.si/evem/drzavljani/zacetna.evem')
+SEED3 = ('https://e-uprava.gov.si/')
+SEED4 = ('https://www.e-prostor.gov.si/')
 QUEUE_FILE = PROJECT_NAME + '/queue.txt'
 CRAWLED_FILE = PROJECT_NAME + '/crawled.txt'
 DOMAIN_FILE = PROJECT_NAME + '/DOMAIN.txt'
@@ -18,7 +22,7 @@ NUMBER_OF_THREADS = 5     #ŠTEVILO NITI
 TIMEOUT = 5
 queue = Queue()   #THREAD QUEUE
 
-Spider(PROJECT_NAME, HOMEPAGE1)
+Spider(PROJECT_NAME, SEED1,SEED2,SEED3,SEED4)
 
 
 

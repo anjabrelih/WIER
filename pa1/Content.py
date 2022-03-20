@@ -1,5 +1,6 @@
 import urllib 
 import requests
+from bs4 import BeautifulSoup
 
 WEB_PAGE_ADDRESS = "http://evem.gov.si"
 
@@ -15,8 +16,6 @@ with urllib.request.urlopen(request) as response:
     print(f"Retrieved Web content: \n\n'\n{html}\n'")
 
 
-import requests
-from bs4 import BeautifulSoup
 
 url = "http://evem.gov.si"
 soup = BeautifulSoup(requests.get(url).content, "html.parser")
