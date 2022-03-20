@@ -17,7 +17,7 @@ SEED4 = ('https://www.e-prostor.gov.si/')
 QUEUE_FILE = PROJECT_NAME + '/queue.txt'
 CRAWLED_FILE = PROJECT_NAME + '/crawled.txt'
 DOMAIN_FILE = PROJECT_NAME + '/DOMAIN.txt'
-NUMBER_OF_THREADS = 1     #ŠTEVILO NITI
+NUMBER_OF_THREADS = 5     #ŠTEVILO NITI
 TIMEOUT = 5
 queue = Queue()   #THREAD QUEUE
 

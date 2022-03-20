@@ -46,7 +46,7 @@ class Spider:
         Spider.queue.add(Spider.base_url3)
         Spider.queue.add(Spider.base_url4)
         Spider.update_files()
-        time.sleep(10)
+        #time.sleep(10)
         
 
     @staticmethod
