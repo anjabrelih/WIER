@@ -1,8 +1,8 @@
 from urllib.request import urlopen
 from webbrowser import get
-from link_finder import LinkFinder
-from general import * #import all
-from domain import *
+from n_link_finder import LinkFinder
+from n_general import * #import all
+from n_domain import *
 import time
 from numpy import append
 
@@ -46,7 +46,7 @@ class Spider:
         Spider.queue.add(Spider.base_url3)
         Spider.queue.add(Spider.base_url4)
         Spider.update_files()
-        time.sleep(10)
+        #time.sleep(10)
         
 
     @staticmethod
