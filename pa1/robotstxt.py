@@ -1,8 +1,9 @@
-import urllib.request
+import requests
+from validator_collection import validators
 import io
 from webbrowser import get
 from link_finder import LinkFinder
-import robotexclusionrulesparser
+#import robotexclusionrulesparser
 import urllib.robotparser
 from spider import Spider
 
@@ -23,7 +24,7 @@ def get_robots_txt(url):
 
 print(get_robots_txt('https://www.e-prostor.gov.si/'))
 
-robotex = robotexclusionrulesparser.RobotExclusionRulesParser()
+#robotex = robotexclusionrulesparser.RobotExclusionRulesParser()
 
 #print('robots-txt:')
 #print(robotex.parse(get_robots_txt('https://www.fri.uni-lj.si/')))
@@ -44,16 +45,9 @@ robotex = robotexclusionrulesparser.RobotExclusionRulesParser()
 #    print("no crawl delay")
 
 def get_sitemaps(robots):
-    """Parse a robots.txt file and return a Python list containing any sitemap URLs found.
-
-    Args:
-        robots (string): Contents of robots.txt file.
     
-    Returns:
-        data (list): List containing each sitemap found.
-    """
-
     data = []
+    links = []
     lines = str(robots).splitlines()
 
     for line in lines:
@@ -62,12 +56,22 @@ def get_sitemaps(robots):
             data.append(split)
             # mogoče če se da kr linkfinder na robotstxt?
             
+            for possible_link in data:
+                try:
+                    value = validators.url(possible_link) # Možna rešitev, sam zrihtat je treba. ta preveri, če je res link
+                    links.append(value)
+                except:
+                    pass
 
-    return data
+                
+            #return links
+        #return links
+    return links
 sitemaps = get_sitemaps(get_robots_txt('https://www.e-prostor.gov.si/'))
 print(sitemaps)
 
-print('Link finder: ')
-finder = LinkFinder('gov.si')
-finder.feed(get_robots_txt('https://www.gov.si/'))
+#print('Link finder: ')
+#finder = LinkFinder('gov.si')
+#finder.feed(get_robots_txt('https://www.gov.si/'))
 # vrne ven podan url? BWO
+

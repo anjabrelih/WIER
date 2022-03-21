@@ -1,12 +1,17 @@
-from url_normalize import url_normalize
-from urllib.parse import urlparse
+import hashlib
+import urllib.request
+
+# Hash HTML content
+def html_hash(html):
+    hashed_html = hashlib.md5((html).encode()).hexdigest()
+    return hashed_html
 
 
-# URL canonicalization
-def url_canonical(url):
-    parse_url = urlparse(url)
-    url_can = parse_url.scheme + "://" + parse_url.netloc + parse_url.path
-    url_can_norm = url_normalize(url_can)
+# Get Sitemap link from robots.txt
+def get_sitemap(robots):
+    for line in robots.splitlines():
+        if "sitemap" in line:
+            smap = urllib.request.get(line.split(' ')[1]) # Not ok - check robotstxt
+            return smap.text
 
-    return url_can_norm
 
