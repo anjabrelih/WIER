@@ -10,6 +10,7 @@ from selenium.webdriver.chrome.options import Options
 import robotexclusionrulesparser
 import socket
 import time
+import urllib.robotparser
 
 
 # Edit parameters if needed
@@ -66,6 +67,22 @@ def get_robots_txt(domain_url):
     data = io.TextIOWrapper(req, encoding='utf-8')
 
     return data.read()
+
+
+##################################
+#NEW FUNCTION FOR CRAWL DELAY!!!!
+##################################
+def get_crawl_Delay(url):
+    rb = urllib.robotparser.RobotFileParser(url)
+    user_agent = "*"
+    rb.set_url(url)
+    rb.read()
+    rb.can_fetch(user_agent,url)
+    delay = rb.crawl_delay(user_agent)
+
+    return delay
+
+
 
 
 # Get domain name
