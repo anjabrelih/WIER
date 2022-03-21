@@ -1,16 +1,11 @@
 /pa1/__pycache__
 /pa1/Pajek Oskar
-/pa1/pgdata
+/pa1/db/pgdata
 
+/pa1/crawler/page.py
 
-
-/Remote crawler database (server).ipynb
-/Web crawling - basic tools.ipynb
-
-/pgdata
-/init-scripts
+/TEST
 
 /testdb.py
 /testlink.py
-
 /app.py

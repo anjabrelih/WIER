@@ -1,7 +1,6 @@
 from html.parser import HTMLParser
 from urllib import parse
 
-## Zrihtaj parsanje cele spletne strani tukej! al pa vsaj slike dodej pa parsej vsebino drugot?
 
 class LinkFinder(HTMLParser):
     

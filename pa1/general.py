@@ -1,7 +1,7 @@
 import os
 #from numpy import append
 
-# Each website you crawl is a separate project (folder) - zbriši, ne rabimo te mape
+# Each website you crawl is a separate project (folder) - zbriši - poveži z bazo
 
 def create_project_dir(directory):
     if not os.path.exists(directory):
@@ -9,7 +9,7 @@ def create_project_dir(directory):
         os.makedirs(directory)
 
 
-#Create queue and crawled files (if not created) - zbriši, ne rabimo; moreš pa bazico uredit ane!
+#Create queue and crawled files (if not created) - zbriši - poveži z bazo
 
 def create_data_files(project_name, base_url1):
     queue = os.path.join(project_name , 'queue.txt')
@@ -23,7 +23,7 @@ def create_data_files(project_name, base_url1):
         write_file(Domains, '') #IP list is empty
 
 
-#Create a new file - zbriši, to je sam za kreirat datoteke
+#Create a new file - zbriši, to je sam za kreirat datoteke (ne rabmo ker gledamo bazo)
 def write_file(path, data):
     with open(path, 'w') as f: #W for writting
         f.write(data)

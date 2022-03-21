@@ -8,10 +8,10 @@ url3 = 'https://www.gov.si/novice/?tag%5B0%5D=554'
 
 
 parse = urlparse(url3)
-#print(parse)
+print(parse)
 
 url_can = parse.scheme + "://" + parse.netloc + parse.path
-#print(url_can)
+print(url_can)
 
 url_can_norm = url_normalize(url_can)
-#print(url_can_norm)
+print(url_can_norm)

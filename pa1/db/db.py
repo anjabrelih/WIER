@@ -1,13 +1,44 @@
 import threading
 import psycopg2
-import datetime
 from sys import getsizeof
 
 
-lock = threading.Lock() # threading lock for db
+# Set threading lock for database
+lock = threading.Lock()
+
+
+# Get URLs from frontier
+def get_url_from_frontier(number):
+    with lock:
+        try:
+            conn = psycopg2.connect(host="localhost", user="crawler", password="SecretPassword")
+            conn.autocommit = True
+
+            cur =conn.cursor()
+            sql = "" ########################################
+            cur.execute(sql, (number))
+            frontier_url = cur.fetchall()
+            cur.close()
+            return frontier_url
+        
+        except Exception as error:
+            print("Error geting URLs from frontier: ", error)
+            return -1
+
+        finally:
+            if conn is not None:
+                conn.close()
+
+
+# Insert URLs to frontier (multiple urls)
+def write_url_to_frontier(urls, siteid):
+    return''
+
+
+
 
 def insert2page(site_id, page_type_code, url, html_content, http_status_code, accessed_time, hash):
-    # NI OK, POSODOBIT MORE FRONTIR
+    # NI OK, POSODOBIT MORE FRONTIR (uporabi metodo update)
         with lock:
             try:
                 conn = psycopg2.connect(host="localhost", user="crawler", password="SecretPassword") # connect to db
@@ -30,6 +61,7 @@ def insert2page(site_id, page_type_code, url, html_content, http_status_code, ac
             finally:
                 if conn is not None:
                     conn.close()
+
 
 def insert_site(id, domain, robots_content, sitemap_content, ip_address, last_accessed_time, crawl_delay):
         with lock:

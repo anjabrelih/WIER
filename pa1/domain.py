@@ -20,5 +20,5 @@ def get_sub_domain_name(url):
 
 
 # Test
-#print(get_domain_name('https://e-uprava.gov.si/podrocja/osebni-dokumenti-potrdila-selitev/selitev-prijava-odjava-prebivalisca.html'))
-#print(get_sub_domain_name('https://e-uprava.gov.si/podrocja/osebni-dokumenti-potrdila-selitev/selitev-prijava-odjava-prebivalisca.html'))
+print(get_domain_name('https://e-uprava.gov.si/podrocja/osebni-dokumenti-potrdila-selitev/selitev-prijava-odjava-prebivalisca.html'))
+print(get_sub_domain_name('https://gov.si/podrocja/osebni-dokumenti-potrdila-selitev/selitev-prijava-odjava-prebivalisca.html'))
