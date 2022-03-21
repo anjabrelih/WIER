@@ -37,7 +37,7 @@ def write_url_to_frontier(urls, siteid):
 
 
 
-def insert2page(site_id, page_type_code, url, html_content, http_status_code, accessed_time, hash):
+def update_page(site_id, page_type_code, url, html_content, http_status_code, accessed_time, hash):
     # NI OK, POSODOBIT MORE FRONTIR (uporabi metodo update)
         with lock:
             try:
