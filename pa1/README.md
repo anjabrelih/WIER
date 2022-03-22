@@ -9,6 +9,7 @@ threading
 hashlib
 psycopg2
 selenium
+validator_collection
 ```
 
 

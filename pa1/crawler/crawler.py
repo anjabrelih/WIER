@@ -11,10 +11,11 @@ import socket
 import time
 import urllib.robotparser
 import requests
+from validator_collection import validators
 
 
 # Edit parameters if needed
-web_driver_location = "C:\Users\anjab\Desktop\MSc_MM\FRI_Iskanje in ekstrakcija podatkov s spleta\Vaje\WIER\pa1\chromedriver"
+web_driver_location = "C:\Users\anjab\Downloads\chromedriver_win32\chromedriver"
 user_agent = "user-agent=fri-ieps-OSKAR"
 timeout = 3
 
@@ -35,7 +36,6 @@ def crawl_page(url):
     button = driver.find_elements_by_xpath("//button[@onclick]")
     code = driver.find_elements_by_xpath("//script")
     elems = driver.find_elements_by_xpath("//a[@href]")
-
     # add method for parsing each of the above three
 
 
@@ -56,17 +56,6 @@ def url_canonical(url):
 
     return url_can_norm
 
-# Get robots.txt content
-def get_robots_txt(domain_url):
-    if domain_url.endswith('/'):
-        path = domain_url
-    else:
-        path = domain_url + '/'
-    req = urllib.request.urlopen(path + "robots.txt", data=None)
-    data = io.TextIOWrapper(req, encoding='utf-8')
-
-    return data.read()
-
 
 # Get (sub)domain name
 def domain_name(url):
@@ -76,20 +65,54 @@ def domain_name(url):
         return ''
 
 
-##################################
-#NEW FUNCTION FOR CRAWL DELAY!!!!
-##################################
-def get_Delay_Sitemaps(url):
-    url_r = urljoin(url,'/robots.txt')
-    rb = urllib.robotparser.RobotFileParser(url_r)
-    user_agent = "*"
-    rb.set_url(url_r)
-    rb.read()
-    rb.can_fetch(user_agent,url_r)
-    delay = rb.crawl_delay(user_agent)
-    sitemaps = rb.site_maps()
+# Get robots.txt content
+def get_robots_txt(domain_url):
+    if domain_url.endswith('/'):
+        path = domain_url
+    else:
+        path = domain_url + '/'
+    req = urllib.request.urlopen(path + "robots.txt", data=None)
+    data = io.TextIOWrapper(req, encoding='utf-8')
 
-    return delay, sitemaps
+    robots = data.read()    
+    sitemap, disallow, delay = get_robots_info(robots)
+
+    return robots, sitemap, disallow, delay
+
+
+# Get robots.txt relavant information
+def get_robots_info(robots):
+
+    sitemap = []
+    disallow = []
+    delay = 5 # Default value
+    lines = str(robots).splitlines()
+    
+
+    for line in lines:
+        # Sitemap
+        if 'sitemap:' in line.lower(): # line.lower ot avoid upper/lower case problem
+            split = line.split(': ')
+            print(split)
+                        
+            for possible_link in split: 
+                try:
+                    value = validators.url(possible_link)
+                    sitemap.append(value)
+                    print(sitemap)
+                except:
+                    pass
+        
+        # Disallow
+        if 'disallow:' in line.lower():
+            disallow.append(line.split(': ')[1].split(' ')[0])
+
+        # Crawl-delay
+        if ('crawl-delay:' or 'crawl delay:' or 'crawl_delay:') in line.lower():
+            split = line.split(': ')[1]
+            delay = int(split)
+     
+    return sitemap, disallow, delay
 
 
 #GET DATA_TYPE FROM URL
