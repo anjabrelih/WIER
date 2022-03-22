@@ -10,7 +10,7 @@ from selenium.webdriver.chrome.options import Options
 import robotexclusionrulesparser
 import socket
 import time
-import urllib.robotparser
+
 
 
 # Edit parameters if needed
@@ -38,7 +38,6 @@ def crawl_page(url):
     elems = driver.find_elements_by_xpath("//a[@href]")
 
     # add method for parsing each of the above three
-
 
 
 
@@ -70,29 +69,7 @@ def get_robots_txt(domain_url):
     return data.read()
 
 
-<<<<<<< HEAD
-##################################
-#NEW FUNCTION FOR CRAWL DELAY!!!!
-##################################
-def get_Delay_Sitemaps(url):
-    url_r = urljoin(url,'/robots.txt')
-    rb = urllib.robotparser.RobotFileParser(url_r)
-    user_agent = "*"
-    rb.set_url(url_r)
-    rb.read()
-    rb.can_fetch(user_agent,url_r)
-    delay = rb.crawl_delay(user_agent)
-    sitemaps = rb.site_maps()
-
-    return delay, sitemaps
-
-
-
-
-# Get domain name
-=======
 # Get (sub)domain name
->>>>>>> bd79df5aa4f14b643410a6b7abfcfae01e223c30
 def domain_name(url):
     try:
         return urlparse(url).netloc
