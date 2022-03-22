@@ -42,7 +42,6 @@ def crawl_page(url):
 
 
 
-
 # Correct url (before canonicalization!)
 def correct_url(url):
     if not url.startswith("http://") and not url.startswith("https://"):
