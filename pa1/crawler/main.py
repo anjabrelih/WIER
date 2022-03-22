@@ -20,3 +20,27 @@ if frontier_url == -1 and len(frontier_url) == 0:
         print('seed in db')
     except:
         print("No more urls")
+
+
+# Create worker threads
+while frontier_url != -1 and len(frontier_url) != 0:
+    i = 0
+    threads = []
+
+    for f_url in frontier_url:
+
+        if i >= number_of_threads:
+            break
+
+        t = threading.Thread(target = crawler.crawl_page(f_url))
+        t.daemon = True
+        t.start()
+        threads.append(t)
+        i = i + 1
+
+    for th in threads:
+        th.join()
+    
+    frontier_url = db.get_url_from_frontier(number_of_threads)
+
+

@@ -7,7 +7,6 @@ import urllib.request
 import io
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
-import robotexclusionrulesparser
 import socket
 import time
 
@@ -19,7 +18,6 @@ user_agent = "user-agent=fri-ieps-OSKAR"
 timeout = 3
 
 # Options (do not edit)
-robotex = robotexclusionrulesparser.RobotExclusionRulesParser()
 chrome_options = Options()
 chrome_options.add_argument("--headless")
 chrome_options.add_argument(user_agent)
