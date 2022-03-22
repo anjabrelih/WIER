@@ -9,7 +9,8 @@ from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 import socket
 import time
-
+import urllib.robotparser
+import requests
 
 
 # Edit parameters if needed
@@ -73,6 +74,32 @@ def domain_name(url):
         return urlparse(url).netloc
     except:
         return ''
+
+
+##################################
+#NEW FUNCTION FOR CRAWL DELAY!!!!
+##################################
+def get_Delay_Sitemaps(url):
+    url_r = urljoin(url,'/robots.txt')
+    rb = urllib.robotparser.RobotFileParser(url_r)
+    user_agent = "*"
+    rb.set_url(url_r)
+    rb.read()
+    rb.can_fetch(user_agent,url_r)
+    delay = rb.crawl_delay(user_agent)
+    sitemaps = rb.site_maps()
+
+    return delay, sitemaps
+
+
+#GET DATA_TYPE FROM URL
+def get_type (url):
+    data = requests.head(url)
+    header = data.headers
+    data_type = header.get('Content-Type')
+
+    return data_type
+
 
 
 # Get domain IP address
