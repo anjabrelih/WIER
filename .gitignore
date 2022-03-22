@@ -1,6 +1,6 @@
 /pa1/__pycache__
-/pa1/Pajek Oskar
 /pa1/db/pgdata
+/pa1/test_scripts
 
 /pa1/crawler/page.py
 
@@ -9,3 +9,4 @@
 /testdb.py
 /testlink.py
 /app.py
+
