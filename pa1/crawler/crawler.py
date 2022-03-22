@@ -73,11 +73,12 @@ def get_robots_txt(domain_url):
 #NEW FUNCTION FOR CRAWL DELAY!!!!
 ##################################
 def get_Delay_Sitemaps(url):
-    rb = urllib.robotparser.RobotFileParser(url)
+    url_r = urljoin(url,'/robots.txt')
+    rb = urllib.robotparser.RobotFileParser(url_r)
     user_agent = "*"
-    rb.set_url(url)
+    rb.set_url(url_r)
     rb.read()
-    rb.can_fetch(user_agent,url)
+    rb.can_fetch(user_agent,url_r)
     delay = rb.crawl_delay(user_agent)
     sitemaps = rb.site_maps()
 
