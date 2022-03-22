@@ -22,6 +22,3 @@ if frontier_url == -1 and len(frontier_url) == 0:
         print("No more urls")
 
 
-
-
-
