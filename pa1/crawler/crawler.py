@@ -44,7 +44,7 @@ def crawl_page(url):
 def correct_url(url):
     if not url.startswith("http://") and not url.startswith("https://"):
         url = "http://" + url
-        
+
     return url
 
 
@@ -74,7 +74,7 @@ def get_robots_txt(domain_url):
     req = urllib.request.urlopen(path + "robots.txt", data=None)
     data = io.TextIOWrapper(req, encoding='utf-8')
 
-    robots = data.read()    
+    robots = data.read()
     sitemap, disallow, delay = get_robots_info(robots)
 
     return robots, sitemap, disallow, delay
@@ -87,22 +87,21 @@ def get_robots_info(robots):
     disallow = []
     delay = 5 # Default value
     lines = str(robots).splitlines()
-    
+
 
     for line in lines:
         # Sitemap
         if 'sitemap:' in line.lower(): # line.lower ot avoid upper/lower case problem
             split = line.split(': ')
             print(split)
-                        
-            for possible_link in split: 
+
+            for possible_link in split:
                 try:
                     value = validators.url(possible_link)
                     sitemap.append(value)
                     print(sitemap)
                 except:
                     pass
-        
         # Disallow
         if 'disallow:' in line.lower():
             disallow.append(line.split(': ')[1].split(' ')[0])
@@ -111,7 +110,6 @@ def get_robots_info(robots):
         if ('crawl-delay:' or 'crawl delay:' or 'crawl_delay:') in line.lower():
             split = line.split(': ')[1]
             delay = int(split)
-     
     return sitemap, disallow, delay
 
 
@@ -136,7 +134,7 @@ def get_ip_address(url):
 # Class link finder for parsing sitemap _ WONT WORK - need to parse XML site (not necesarilly)
 # Preveri kak hmtl parsa xml - če se da s tem
 class LinkFinder(HTMLParser):
-    
+
     def __init__(self, page_url):
         super().__init__()
         self.page_url = page_url
@@ -147,7 +145,7 @@ class LinkFinder(HTMLParser):
             for (attribute, value) in attrs:
                 if attribute == 'href':
                     url = urljoin(self.page_url, value)
-                    self.links.add(url)          
+                    self.links.add(url)
 
     def page_links(self):
         return self.links
