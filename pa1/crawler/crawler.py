@@ -70,7 +70,14 @@ def get_robots_txt(domain_url):
     return data.read()
 
 
-<<<<<<< HEAD
+# Get (sub)domain name
+def domain_name(url):
+    try:
+        return urlparse(url).netloc
+    except:
+        return ''
+
+
 ##################################
 #NEW FUNCTION FOR CRAWL DELAY!!!!
 ##################################
@@ -85,19 +92,6 @@ def get_Delay_Sitemaps(url):
     sitemaps = rb.site_maps()
 
     return delay, sitemaps
-
-
-
-
-# Get domain name
-=======
-# Get (sub)domain name
->>>>>>> bd79df5aa4f14b643410a6b7abfcfae01e223c30
-def domain_name(url):
-    try:
-        return urlparse(url).netloc
-    except:
-        return ''
 
 
 # Get domain IP address
