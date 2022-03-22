@@ -16,7 +16,7 @@ import urllib.robotparser
 # Edit parameters if needed
 web_driver_location = "C:\Users\anjab\Desktop\MSc_MM\FRI_Iskanje in ekstrakcija podatkov s spleta\Vaje\WIER\pa1\chromedriver"
 user_agent = "user-agent=fri-ieps-OSKAR"
-timeout = 4
+timeout = 3
 
 # Options (do not edit)
 robotex = robotexclusionrulesparser.RobotExclusionRulesParser()
@@ -42,10 +42,11 @@ def crawl_page(url):
 
 
 
-# Correct url (before caconicalization!)
+# Correct url (before canonicalization!)
 def correct_url(url):
     if not url.startswith("http://") and not url.startswith("https://"):
         url = "http://" + url
+        
     return url
 
 
@@ -69,6 +70,7 @@ def get_robots_txt(domain_url):
     return data.read()
 
 
+<<<<<<< HEAD
 ##################################
 #NEW FUNCTION FOR CRAWL DELAY!!!!
 ##################################
@@ -88,6 +90,9 @@ def get_Delay_Sitemaps(url):
 
 
 # Get domain name
+=======
+# Get (sub)domain name
+>>>>>>> bd79df5aa4f14b643410a6b7abfcfae01e223c30
 def domain_name(url):
     try:
         return urlparse(url).netloc
@@ -104,6 +109,7 @@ def get_ip_address(url):
 
 
 # Class link finder for parsing sitemap _ WONT WORK - need to parse XML site (not necesarilly)
+# Preveri kak hmtl parsa xml - če se da s tem
 class LinkFinder(HTMLParser):
     
     def __init__(self, page_url):
