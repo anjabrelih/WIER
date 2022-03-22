@@ -11,6 +11,7 @@ import robotexclusionrulesparser
 import socket
 import time
 import urllib.robotparser
+import requests
 
 
 # Edit parameters if needed
@@ -92,6 +93,16 @@ def get_Delay_Sitemaps(url):
     sitemaps = rb.site_maps()
 
     return delay, sitemaps
+
+
+#GET DATA_TYPE FROM URL
+def get_type (url):
+    data = requests.head(url)
+    header = data.headers
+    data_type = header.get('Content-Type')
+
+    return data_type
+
 
 
 # Get domain IP address
