@@ -15,7 +15,7 @@ def get_url_from_frontier(number):
             conn.autocommit = True
 
             cur =conn.cursor()
-            sql = "" ########################################
+            sql = "" ######################################## v poizvedbi dodaš pogoje za crawl (delay, dissallow)
             cur.execute(sql, (number))
             frontier_url = cur.fetchall()
             cur.close()
@@ -32,7 +32,25 @@ def get_url_from_frontier(number):
 
 # Insert URLs to frontier (multiple urls)
 def write_url_to_frontier(urls, siteid):
-    return''
+    with lock:
+        try:
+            conn = psycopg2.connect(host="localhost", user="crawler", password="SecretPassword")
+            conn.autocommit = True
+
+            cur =conn.cursor()
+            sql = "" ######################################## insert tag FRONTIER
+            cur.execute(sql, (urls, siteid))
+            frontier_url = cur.fetchall()
+            cur.close()
+            return frontier_url
+        
+        except Exception as error:
+            print("Error geting URLs to frontier: ", error)
+            return -1
+
+        finally:
+            if conn is not None:
+                conn.close()
 
 
 
