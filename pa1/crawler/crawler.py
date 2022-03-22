@@ -1,17 +1,10 @@
-from url_normalize import url_normalize
-from urllib.parse import urlparse
-from urllib.parse import urldefrag
 from html.parser import HTMLParser
 from urllib.parse import urljoin
-import urllib.request
-import io
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
-import socket
 import time
-import urllib.robotparser
 import requests
-from validator_collection import validators
+
 
 
 # Edit parameters if needed
@@ -24,6 +17,8 @@ chrome_options = Options()
 chrome_options.add_argument("--headless")
 chrome_options.add_argument(user_agent)
 driver = webdriver.Chrome(web_driver_location, options=chrome_options)
+
+
 
 # Crawl page
 def crawl_page(url):
@@ -40,79 +35,6 @@ def crawl_page(url):
 
 
 
-# Correct url (before canonicalization!)
-def correct_url(url):
-    if not url.startswith("http://") and not url.startswith("https://"):
-        url = "http://" + url
-
-    return url
-
-
-# URL canonicalization
-def url_canonical(url):
-    parse_url = urlparse(correct_url(url))
-    url_can = parse_url.scheme + "://" + parse_url.netloc + parse_url.path
-    url_can_norm = url_normalize(url_can)
-
-    return url_can_norm
-
-
-# Get (sub)domain name
-def domain_name(url):
-    try:
-        return urlparse(url).netloc
-    except:
-        return ''
-
-
-# Get robots.txt content
-def get_robots_txt(domain_url):
-    if domain_url.endswith('/'):
-        path = domain_url
-    else:
-        path = domain_url + '/'
-    req = urllib.request.urlopen(path + "robots.txt", data=None)
-    data = io.TextIOWrapper(req, encoding='utf-8')
-
-    robots = data.read()
-    sitemap, disallow, delay = get_robots_info(robots)
-
-    return robots, sitemap, disallow, delay
-
-
-# Get robots.txt relavant information
-def get_robots_info(robots):
-
-    sitemap = []
-    disallow = []
-    delay = 5 # Default value
-    lines = str(robots).splitlines()
-
-
-    for line in lines:
-        # Sitemap
-        if 'sitemap:' in line.lower(): # line.lower ot avoid upper/lower case problem
-            split = line.split(': ')
-            print(split)
-
-            for possible_link in split:
-                try:
-                    value = validators.url(possible_link)
-                    sitemap.append(value)
-                    print(sitemap)
-                except:
-                    pass
-        # Disallow
-        if 'disallow:' in line.lower():
-            disallow.append(line.split(': ')[1].split(' ')[0])
-
-        # Crawl-delay
-        if ('crawl-delay:' or 'crawl delay:' or 'crawl_delay:') in line.lower():
-            split = line.split(': ')[1]
-            delay = int(split)
-    return sitemap, disallow, delay
-
-
 #GET DATA_TYPE FROM URL
 def get_type (url):
     data = requests.head(url)
@@ -120,15 +42,6 @@ def get_type (url):
     data_type = header.get('Content-Type')
 
     return data_type
-
-
-
-# Get domain IP address
-def get_ip_address(url):
-    try:
-        return socket.gethostbyname(url)
-    except:
-        return ''
 
 
 # Class link finder for parsing sitemap _ WONT WORK - need to parse XML site (not necesarilly)
