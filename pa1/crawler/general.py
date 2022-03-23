@@ -1,11 +1,13 @@
 import hashlib
+from imp import get_frozen_object
 import socket
 from urllib.parse import urlparse
 from url_normalize import url_normalize
 import urllib.request
 import io
 from validator_collection import validators
-import requests
+import db
+import time
 
 
 # Hash HTML content
@@ -15,7 +17,7 @@ def html_hash(html):
     return hashed_html
 
 
-# Correct url (before canonicalization!)
+# Correct url (before canonicalization!) (output)
 def correct_url(url):
     if not url.startswith("http://") and not url.startswith("https://"):
         url = "http://" + url
@@ -32,12 +34,24 @@ def url_canonical(url):
     return url_can_norm
 
 
-# Get (sub)domain name
+# Get (sub)domain name (output example: www.gov.si)
 def domain_name(url):
     try:
-        return urlparse(url).netloc
+        domain = urlparse(url).netloc
+        site_id, flag, disallow = db.write_domain_to_site(domain)
+
+        # new domain
+        if flag == -1:
+
+            robots_content, sitemap_content, disallow, crawl_delay, last_accessed_time = get_robots_txt(domain)
+            ip_address = get_ip_address(domain)
+            db.update_site(site_id, domain, robots_content, sitemap_content, ip_address, crawl_delay, last_accessed_time)
+         
+
+        return domain, site_id, disallow
     except:
-        return ''
+        ('Error getting domain')
+        return 'error', -1, ''
 
 
 # Get domain IP address
@@ -59,10 +73,11 @@ def get_robots_txt(domain_url):
     req = urllib.request.urlopen(path + "robots.txt", data=None)
     data = io.TextIOWrapper(req, encoding='utf-8')
 
-    robots = data.read()    
+    robots = data.read()
+    last_accessed_time = int(time.time())    
     sitemap, disallow, delay = get_robots_info(robots)
 
-    return robots, sitemap, disallow, delay
+    return robots, sitemap, disallow, delay, last_accessed_time
 
 
 # Get robots.txt relavant information
@@ -97,3 +112,11 @@ def get_robots_info(robots):
             delay = int(split)
      
     return sitemap, disallow, delay
+
+
+# Get content type
+def get_content_type(response):
+    content_type = 'BINARY'
+    if 'html' in response:
+        content_type = 'HTML'
+    

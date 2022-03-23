@@ -2,7 +2,6 @@
 /pa1/db/pgdata
 /pa1/test_scripts
 
-/pa1/crawler/page.py
 
 /TEST
 
@@ -12,3 +11,4 @@
 /testsitemap.py
 /testxml.py
 /testip.py
+/testrequest.py
