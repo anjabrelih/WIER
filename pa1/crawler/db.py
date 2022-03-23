@@ -2,6 +2,8 @@ import threading
 import psycopg2
 import time
 
+from validator_collection import url
+
 
 
 # Set threading lock for database
@@ -18,9 +20,9 @@ def get_crawl_delay(domain):
 
             cur =conn.cursor()
             
-            sql = 'SELECT crawl_delay FROM crawldb.site WHERE site.domain = %s;'
+            sql = 'SELECT site.crawl_delay, site.id FROM crawldb.site WHERE site.domain = %s;'
             cur.execute(sql, (domain,))
-            crawl_delay, site_id = cur.fetchall()[0][1]
+            crawl_delay, site_id = cur.fetchall()[0][1] # zakaj site ID? bit more tud v poizvedbi
 
             cur.close()
             return crawl_delay, site_id
@@ -297,8 +299,8 @@ def update_page(site_id, page_type_code, url, html_content, http_status_code, ac
 
         return id
 
-
-def write_data(page_id, data_type_code):
+# Write BINARY data
+def write_data(page_type_code, url, http_status_code, accessed_time, last_accessed_time, page_data_type):
     with lock:
             try:
                 conn = psycopg2.connect(host="localhost", user="crawler", password="SecretPassword")
@@ -306,9 +308,20 @@ def write_data(page_id, data_type_code):
 
                 cur =conn.cursor()
                 
-                sql = 'INSERT INTO crawldb.page_data (page_id, data_type_code) VALUES (%s,%s)'
+                # Update page
+                sql = 'UPDATE crawldb.page (page_type_code, http_status_code, accessed_time) VALUES (%s, %s, %s) WHERE url = %s RETURNING id, site_id;'
+                cur.execute(sql, (page_type_code, http_status_code, accessed_time, url,))
+                page_id, site_id = cur.fetchall()
+                print('RETURNING page_id SITE id: ', page_id, site_id)
 
-                cur.execute(sql, (page_id, data_type_code,))
+                # Write page_data
+                sql = 'INSERT INTO crawldb.page_data (page_id, data_type_code) VALUES (%s,%s)'
+                cur.execute(sql, (page_id, page_data_type,))
+
+                # Update last accessed time for domain
+                sql = 'UPDATE crawldb.page SET last_accessed_time = %s WHERE site_id = %s;'
+                cur.execute(sql, (last_accessed_time, site_id,))
+
            
                 cur.close()
 
@@ -320,23 +333,50 @@ def write_data(page_id, data_type_code):
                     conn.close()
 
 
-
-def write_img(page_id, filename, content_type, accessed_time):
+# Write image
+def write_img(url_site_id, page_type_code, content_type, accessed_time):
     with lock:
+
+        index = -1
         try:
             conn = psycopg2.connect(host="localhost", user="crawler", password="SecretPassword")
             conn.autocommit = True
 
             cur =conn.cursor()
-                
-            sql = 'INSERT INTO crawldb.image (page_id, filename, content_type, accessed_time) VALUES (%s,%s,%s,%s)'
 
-            cur.execute(sql, (page_id, filename, content_type, accessed_time))
-           
+            for line in url_site_id:
+                    # Check if image url exists
+                try:
+                    sql = 'SELECT id FROM crawldb.page WHERE page.url = %s;'
+                    cur.execute(sql, (line[0],))
+                    index = cur.fetchone()[0]
+
+                   # # Update site
+                    #sql = 'UPDATE last_accessed_time FROM crawldb.site WHERE id = %s'
+                    #cur.execute(sql, (line[1],))
+
+                except Exception as e:
+                    conn.rollback()
+
+                if index == -1:
+                    try:
+                        # New image to page
+                        sql = 'INSERT INTO crawldb.page (page.url, page.site_id, page.page_type_code, page.accessed_time) VALUES (%s, %s, %s, %s) RETURNING id;'
+                        cur.execute(sql, (line[0], line[1], page_type_code, accessed_time,))
+                        page_id = cur.fetchone()[0]
+
+                        # Add new image to image
+                        sql = 'INSERT INTO crawldb.image (image.page_id, image.content_type, image.accessed_time) VALUES (%s, %s, %s)'
+                        cur.execute(sql, (page_id, content_type, accessed_time))
+
+                       # # Update site
+                       # sql = 'UPDATE last_accessed_time FROM crawldb.site WHERE id = %s'
+                        #cur.execute(sql, (line[1],))
+
+                    except Exception as e:
+                        conn.rollback()
+
             cur.close()
-
-        except (Exception, psycopg2.DatabaseError) as error:
-                print("Failed: ", error)
 
         finally:
             if conn is not None:

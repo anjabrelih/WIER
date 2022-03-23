@@ -9,6 +9,7 @@ from urllib.parse import urldefrag
 
 import db
 import general
+from pa1.crawler.db import write_url_to_frontier
 
 
 # Edit parameters if needed
@@ -34,21 +35,26 @@ def crawl_page(url):
         http_status_code = response.status_code
         page_type_code_raw = response.headers['content-type']
         page_type_code = general.get_content_type(page_type_code_raw)
-        time.sleep(crawl_delay)
+        accessed_time = datetime.datetime.now() # with HTML we'll override it
+        last_accessed_time = int(time.time()) # with HTML we'll override it
 
     except Exception as e:
         print("Request head failed :", e)
 
+        time.sleep(crawl_delay)
         response = requests.get(url, allow_redirects=True, timeout=4)
         http_status_code = response.status_code
         page_type_code_raw = response.headers['content-type']
         page_type_code = general.get_content_type(page_type_code_raw)
-        time.sleep(crawl_delay)
+        accessed_time = datetime.datetime.now() # with HTML we'll override it
+        last_accessed_time = int(time.time()) # with HTML we'll override it
+    
 
 
     # Content type HTML
     if page_type_code == 'HTML':
 
+        time.sleep(crawl_delay)
         driver.get(url)
         time.sleep(timeout) # waiting for page to load
 
@@ -62,31 +68,76 @@ def crawl_page(url):
         db.update_page(site_id, page_type_code, url, html_content, http_status_code, accessed_time, hash, last_accessed_time)
 
         # get URLs and site_ids from page
-        new_urls = get_urls(driver)
+        newurls_siteid = get_urls(driver)
 
+        try: 
+            write_url_to_frontier(newurls_siteid)
+        except:
+            print('ERROR getting urls to db')
     
-    
+
+        try:
+            # IMAGES
+            for link in driver.find_elements_by_tag_name("img"):
+                image_links = []
+                l = link.get_attribute('src')
+                if 'gov.si' in l:
+                    image_links.append(l)
+                    
+            newurls_siteid = clean_urls(image_links)
+            accessed_time = datetime.datetime.now()
+            page_type_code = 'BINARY'
+            content_type = 'image'
+
+            db.write_img(newurls_siteid, page_type_code, content_type, accessed_time)
+        except:
+            pass
+
+        # BINARY page_data
+        # Types: https://www.iana.org/assignments/media-types/media-types.xhtml
+        else:
+            if 'application/pdf' in page_type_code_raw:
+                page_data_type = 'PDF'
+                ## page.id
+                ## site_id
+                # page_type_code
+                # url
+                ## html_content = none
+                # http_status_code
+                # accessed_time
+                # last_accessed_time
+
+            if 'application/msword' in page_type_code_raw:
+                page_data_type = 'DOC'
+
+            if 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' in page_type_code_raw:
+                page_data_type = 'DOCX'
+
+
+            if 'application/vnd.ms-powerpoint' in page_type_code_raw:
+                page_data_type = 'PPT'
+
+            if 'application/vnd.openxmlformats-officedocument.presentationml.presentation' in page_type_code_raw:
+                page_data_type = 'PPTX'
+
+            try:
+
+                db.write_data(page_type_code, url, http_status_code, accessed_time, last_accessed_time, page_data_type)
+            except:
+                pass
+            
 
 
 def get_urls(driver):
     possible_urls = []
 
     links_h = driver.find_elements_by_tag_name("a")
-    links_i = driver.find_elements_by_tag_name("img")
     links_b = driver.find_elements_by_xpath("//button[@onclick]")
     links_s = driver.find_elements_by_xpath("//script")
 
     for link in links_h:
         try:
             l = link.get_attribute('href')
-            if 'gov.si' in l:
-                possible_urls.append(l)
-        except:
-            pass
-    
-    for link in links_i:
-        try:
-            l = link.get_attribute('src')
             if 'gov.si' in l:
                 possible_urls.append(l)
         except:
