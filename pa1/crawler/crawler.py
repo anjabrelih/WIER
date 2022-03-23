@@ -4,9 +4,10 @@ from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 import time
 import requests
-import db
-import general
 
+import db
+import main
+import general
 
 
 # Edit parameters if needed
@@ -27,12 +28,45 @@ def crawl_page(url):
     driver.get(url)
     time.sleep(timeout) # waiting for page to load
 
-    html = driver.page_source
-    page_msg = driver.find_element_by_class_name("inside-text")
+    response = requests.get(url)
+    status = response.status_code
 
-    button = driver.find_elements_by_xpath("//button[@onclick]")
-    code = driver.find_elements_by_xpath("//script")
-    elems = driver.find_elements_by_xpath("//a[@href]")
+    a_corrected = general.correct_url(url)
+    a_cannonical = general.url_canonical(url)
+    domain = general.domain_name(url)
+    IP = general.get_ip_address(domain)
+
+    data_ytpe = get_type(url)
+    
+    robots_content = general.get_robots_txt('https://'+domain)
+    #robots_info = general.get_robots_info(robots_content[1])  
+
+
+    links_h = driver.find_elements_by_tag_name("a")
+    links_i = driver.find_elements_by_tag_name("img")
+    links_b = driver.find_elements_by_xpath("//button[@onclick]")
+    for link_h in links_h:
+        link_h = link_h.get_attribute('href')
+        if 'gov.si' in link_h:
+           print(link_h) #ADD TO FRONTIER
+    for link_i in links_i:
+        link_i = link_i.get_attribute('src')
+        if 'gov.si' in link_i:
+           print(link_i) #ADD TO FRONTIER
+    for link_b in links_b:        
+        link_b = link_b.get_attribute('onclick') 
+        if 'gov.si' in link_b:
+            print(link_b) #ADD TO FRONTIER
+    driver.quit()      
+    #ADD LINKS TO FRONTIER!!!!!!!!  
+    # if url in db
+    # don't add!!!
+
+
+    #html = driver.page_source
+    #page_msg = driver.find_element_by_class_name("inside-text")
+    #code = driver.find_elements_by_xpath("//script")
+    #elems = driver.find_elements_by_xpath("//a[@href]")
     # add method for parsing each of the above three
 
 
@@ -45,6 +79,13 @@ def get_type (url):
 
     return data_type
 
+
+#STATUS CODE
+def status_code (url):
+    response = requests.get(url)
+    status = response.staut_code
+
+    return status_code
 
 # Class link finder for parsing sitemap _ WONT WORK - need to parse XML site (not necesarilly)
 # Preveri kak hmtl parsa xml - če se da s tem

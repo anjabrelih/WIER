@@ -5,6 +5,7 @@ from url_normalize import url_normalize
 import urllib.request
 import io
 from validator_collection import validators
+import requests
 
 
 # Hash HTML content
@@ -45,6 +46,7 @@ def get_ip_address(url):
         return socket.gethostbyname(url)
     except:
         return ''
+
 
 
 # Get robots.txt content
