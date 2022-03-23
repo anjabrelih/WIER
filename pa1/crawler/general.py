@@ -35,22 +35,26 @@ def url_canonical(url):
 
 # Get (sub)domain name (output example: www.gov.si)
 def domain_name(url):
-    try:
         domain = urlparse(url).netloc
         site_id, flag, disallow = db.write_domain_to_site(domain)
 
         # new domain
         if flag == -1:
+            try:
+                robots_content, sitemap_content, disallow, crawl_delay, last_accessed_time = get_robots_txt(domain)
+            except:
+                robots_content = ''
+                sitemap_content = ''
+                disallow = ''
+                crawl_delay = 5
+                last_accessed_time = int(time.time())
 
-            robots_content, sitemap_content, disallow, crawl_delay, last_accessed_time = get_robots_txt(domain)
             ip_address = get_ip_address(domain)
             db.update_site(site_id, domain, robots_content, sitemap_content, ip_address, crawl_delay, last_accessed_time)
-         
-
+            print('bd domain updated')
+        
         return domain, site_id, disallow
-    except:
-        ('Error getting domain')
-        return 'error', -1, ''
+    
 
 
 # Get domain IP address
@@ -69,7 +73,7 @@ def get_robots_txt(domain_url):
     else:
         path = domain_url + '/'
 
-    req = urllib.request.urlopen(path + "robots.txt", data=None)
+    req = urllib.request.urlopen("http://"+ path + "robots.txt", data=None)
     data = io.TextIOWrapper(req, encoding='utf-8')
 
     robots = data.read()
@@ -118,4 +122,5 @@ def get_content_type(response):
     content_type = 'BINARY'
     if 'html' in response:
         content_type = 'HTML'
+    return content_type
     

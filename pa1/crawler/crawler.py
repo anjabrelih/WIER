@@ -7,9 +7,8 @@ import requests
 import datetime
 from urllib.parse import urldefrag
 
-import db
-import general
-from pa1.crawler.db import write_url_to_frontier
+from db import *
+from general import *
 
 
 # Edit parameters if needed
@@ -28,13 +27,13 @@ driver = webdriver.Chrome(executable_path=web_driver_location, options=chrome_op
 # Crawl page
 def crawl_page(url):
 
-    crawl_delay, site_id = db.get_crawl_delay(general.domain_name(url))
+    crawl_delay, site_id = db.get_crawl_delay(domain_name(url))
 
     try:
         response = requests.head(url, allow_redirects=True, timeout=timeout)
         http_status_code = response.status_code
         page_type_code_raw = response.headers['content-type']
-        page_type_code = general.get_content_type(page_type_code_raw)
+        page_type_code = get_content_type(page_type_code_raw)
         accessed_time = datetime.datetime.now() # with HTML we'll override it
         last_accessed_time = int(time.time()) # with HTML we'll override it
 
@@ -45,7 +44,7 @@ def crawl_page(url):
         response = requests.get(url, allow_redirects=True, timeout=4)
         http_status_code = response.status_code
         page_type_code_raw = response.headers['content-type']
-        page_type_code = general.get_content_type(page_type_code_raw)
+        page_type_code = get_content_type(page_type_code_raw)
         accessed_time = datetime.datetime.now() # with HTML we'll override it
         last_accessed_time = int(time.time()) # with HTML we'll override it
     
@@ -62,16 +61,16 @@ def crawl_page(url):
 
         accessed_time = datetime.datetime.now()
         last_accessed_time = int(time.time())
-        hash = general.html_hash(html_content)
+        hash = html_hash(html_content)
 
         # Update page in database
         db.update_page(site_id, page_type_code, url, html_content, http_status_code, accessed_time, hash, last_accessed_time)
 
         # get URLs and site_ids from page
-        newurls_siteid = get_urls(driver)
+        new_urls, site_ids, number = get_urls(driver)
 
         try: 
-            write_url_to_frontier(newurls_siteid)
+            write_url_to_frontier(number, new_urls, site_ids)
         except:
             print('ERROR getting urls to db')
     
@@ -84,12 +83,12 @@ def crawl_page(url):
                 if 'gov.si' in l:
                     image_links.append(l)
                     
-            newurls_siteid = clean_urls(image_links)
+            new_urls, site_ids, number = clean_urls(image_links)
             accessed_time = datetime.datetime.now()
             page_type_code = 'BINARY'
             content_type = 'image'
 
-            db.write_img(newurls_siteid, page_type_code, content_type, accessed_time)
+            db.write_img(number, new_urls, site_ids, page_type_code, content_type, accessed_time)
         except:
             pass
 
@@ -159,21 +158,23 @@ def get_urls(driver):
         except:
             pass
 
-    newurls_siteid = clean_urls(possible_urls)
+    new_urls, site_ids, number = clean_urls(possible_urls)
 
-    return newurls_siteid
+    return new_urls, site_ids, number
 
 
 
 def clean_urls(possible_urls):
-    newurls_siteid = []
+    new_urls = []
+    site_ids = []
+    number = 0
 
     for url in possible_urls:
         if "javascript" in url.lower():
             continue
 
         url = urldefrag(url)[0]
-        url = general.url_canonical(url)
+        url = url_canonical(url)
 
         if url.endwith("/"):
             url = url[:-1]
@@ -185,12 +186,14 @@ def clean_urls(possible_urls):
             url = url[:-10]
 
         
-        domain, site_id, disallow = general.domain_name(url)
+        domain, site_id, disallow = domain_name(url)
 
         for disa in disallow:
             if disa not in url:
                 continue
 
-        newurls_siteid.append(url, site_id)
+        new_urls.append(url)
+        site_ids.append(site_id)
+        number = number + 1
 
-    return newurls_siteid
+    return new_urls, site_ids, number
