@@ -70,7 +70,6 @@ def get_robots_info(robots):
     disallow = []
     delay = 5 # Default value
     lines = str(robots).splitlines()
-    
 
     for line in lines:
         # Sitemap
