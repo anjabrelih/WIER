@@ -33,7 +33,7 @@ docker exec -it postgresql-wier-crawler psql -U crawler
 
 *Note: manually added to db:
 - crawldb.page column page_hash (Data type: uuid)
-- crawldb.site columns ip_address (Data type: inet), last_accessed_time (Data type: timestamp without time zone) and crawl_delay (Data type: integer)
+- crawldb.site columns ip_address (Data type: inet), crawl_delay (Data type: integer) and last_accessed_time (Data type: integer)
 
 
 

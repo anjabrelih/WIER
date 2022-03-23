@@ -1,24 +1,67 @@
 import threading
 import psycopg2
-from sys import getsizeof
+import time
 
 
 # Set threading lock for database
 lock = threading.Lock()
 
-
-# Get URLs from frontier
-def get_url_from_frontier(number):
+# Get frontier size
+def get_url_from_frontier():
     with lock:
         try:
             conn = psycopg2.connect(host="localhost", user="crawler", password="SecretPassword")
             conn.autocommit = True
 
             cur =conn.cursor()
-            sql = "" ######################################## v poizvedbi dodaš pogoje za crawl (delay, dissallow)
-            cur.execute(sql, (number))
-            frontier_url = cur.fetchall()
+            # TESTRAJ
+            sql = "SELECT COUNT (ALL crawldb.page WHERE page_type_code = 'FRONTIER')"
+            cur.execute(sql, )
+            frontier_size = cur.fetchall()
             cur.close()
+            return frontier_size
+        
+        except Exception as error:
+            print("Error geting frontier size: ", error)
+            return -1
+
+        finally:
+            if conn is not None:
+                conn.close()
+
+
+# Get URL from frontier (one at the time)
+def get_url_from_frontier():
+    with lock:
+        try:
+            conn = psycopg2.connect(host="localhost", user="crawler", password="SecretPassword")
+            conn.autocommit = True
+
+            cur =conn.cursor()
+
+            # Get url from frontier
+            sql = '''SELECT * crawldb.page (url, site_id) WHERE page_type_code = 'FRONTIER' 
+                    JOIN crawldb.site ON (site_id = id) WHERE 
+                    (site.last_accessed_time <=  (%s - site.crawl_delay))
+                    ORDER BY page.id ASC LIMIT 1'''
+            
+            cur.execute(sql, (int(time.time()),))
+            frontier_url, site_id = cur.fetchall()
+            
+
+            # Update page_type_code
+            sql = '''UPDATE crawldb.page SET page_type_code = NULL WHERE page.url == %s'''
+            cur.execute(sql, (frontier_url,))
+            
+
+
+            # Update page_type_code
+            sql = '''UPDATE crawldb.site SET crawldb.last_accessed_time = %s WHERE site_id == %s'''
+            cur.execute(sql, (int(time.time()),site_id))
+
+            cur.close()
+
+
             return frontier_url
         
         except Exception as error:
@@ -29,6 +72,10 @@ def get_url_from_frontier(number):
             if conn is not None:
                 conn.close()
 
+# Insert domain/check domain index
+def write_domain_to_site(domain):
+
+    return
 
 # Insert URLs to frontier (multiple urls)
 def write_url_to_frontier(urls, siteid):
@@ -37,9 +84,11 @@ def write_url_to_frontier(urls, siteid):
             conn = psycopg2.connect(host="localhost", user="crawler", password="SecretPassword")
             conn.autocommit = True
 
+            tag = 'FRONTIER'
+
             cur =conn.cursor()
-            sql = "" ######################################## insert tag FRONTIER
-            cur.execute(sql, (urls, siteid))
+            sql = ""
+            cur.execute(sql, (urls, siteid, tag))
             frontier_url = cur.fetchall()
             cur.close()
             return frontier_url

@@ -10,6 +10,7 @@ from validator_collection import validators
 # Hash HTML content
 def html_hash(html):
     hashed_html = hashlib.md5((html).encode()).hexdigest()
+
     return hashed_html
 
 
@@ -52,6 +53,7 @@ def get_robots_txt(domain_url):
         path = domain_url
     else:
         path = domain_url + '/'
+
     req = urllib.request.urlopen(path + "robots.txt", data=None)
     data = io.TextIOWrapper(req, encoding='utf-8')
 
