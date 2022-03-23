@@ -2,7 +2,6 @@ import threading
 import psycopg2
 import time
 
-from pa1.crawler.crawler import crawl_page
 
 
 # Set threading lock for database
@@ -35,7 +34,7 @@ def get_crawl_delay(domain):
                 conn.close()
 
 # Get frontier size
-def get_url_from_frontier():
+def get_frontier_size():
     with lock:
         try:
             conn = psycopg2.connect(host="localhost", user="crawler", password="SecretPassword")
@@ -62,6 +61,7 @@ def get_url_from_frontier():
 # Get URL from frontier (one at the time)
 def get_url_from_frontier():
     with lock:
+        flag = -1
         try:
             conn = psycopg2.connect(host="localhost", user="crawler", password="SecretPassword")
             conn.autocommit = True
@@ -69,14 +69,14 @@ def get_url_from_frontier():
             cur =conn.cursor()
 
             # Get url from frontier
-            sql = '''SELECT * crawldb.page (url, site_id) WHERE page_type_code = 'FRONTIER' 
-                    JOIN crawldb.site ON (site_id = id) WHERE 
+            sql = '''SELECT crawldb.page.url WHERE page_type_code = 'FRONTIER'
+                    INNER JOIN crawldb.site ON (crawldb.page.site_id = crawldb.site.id) WHERE 
                     (site.last_accessed_time <=  (%s - site.crawl_delay))
                     ORDER BY page.id ASC LIMIT 1;'''
             
             cur.execute(sql, (int(time.time()),))
-            frontier_url, site_id = cur.fetchone()[0]
-            
+            frontier_url = cur.fetchone()[0]
+            flag = 1
 
             # Update page_type_code
             sql = 'UPDATE crawldb.page SET page_type_code = NULL WHERE page.url = %s;'
@@ -84,18 +84,18 @@ def get_url_from_frontier():
             
 
 
-            # Update page_type_code
-            sql = 'UPDATE crawldb.site SET crawldb.last_accessed_time = %s WHERE site_id = %s;'
-            cur.execute(sql, (int(time.time()), site_id,))
+            # Update page_type_code - dont need
+            #sql = 'UPDATE crawldb.site SET crawldb.last_accessed_time = %s WHERE site_id = %s;'
+            #cur.execute(sql, (int(time.time()), site_id,))
 
             cur.close()
 
 
-            return frontier_url
+            return frontier_url, flag
         
         except Exception as error:
             print("Error geting URLs from frontier: ", error)
-            return -1
+            return '', -10
 
         finally:
             if conn is not None:

@@ -8,13 +8,11 @@ import datetime
 from urllib.parse import urldefrag
 
 import db
-import main
 import general
-from pa1.crawler.general import domain_name, url_canonical
 
 
 # Edit parameters if needed
-web_driver_location = "Users\anjab\Downloads\chromedriver_win32\chromedriver"
+web_driver_location = "C:/Users/anjab/Downloads/chromedriver_win32/chromedriver"
 user_agent = "user-agent=fri-ieps-OSKAR"
 timeout = 3
 
@@ -22,7 +20,7 @@ timeout = 3
 chrome_options = Options()
 chrome_options.add_argument("--headless")
 chrome_options.add_argument(user_agent)
-driver = webdriver.Chrome(web_driver_location, options=chrome_options)
+driver = webdriver.Chrome(executable_path=web_driver_location, options=chrome_options)
 
 
 
@@ -124,7 +122,7 @@ def clean_urls(possible_urls):
             continue
 
         url = urldefrag(url)[0]
-        url = url_canonical(url)
+        url = general.url_canonical(url)
 
         if url.endwith("/"):
             url = url[:-1]
@@ -136,7 +134,7 @@ def clean_urls(possible_urls):
             url = url[:-10]
 
         
-        domain, site_id, disallow = domain_name(url)
+        domain, site_id, disallow = general.domain_name(url)
 
         for disa in disallow:
             if disa not in url:

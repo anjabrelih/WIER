@@ -1,6 +1,7 @@
 import threading
 import crawler
 import db
+import general
 
 
 # Set seeds for web crawler
@@ -10,20 +11,24 @@ number_of_threads = 5
 
 
 # Get frontier
-frontier_url = db.get_url_from_frontier(number_of_threads) # -1 if empty
+frontier_url, flag = db.get_url_from_frontier() # flag = -1 if empty
 
-if frontier_url == -1 and len(frontier_url) == 0:
+if flag == -1: # and len(frontier_url) == 0:
     try:
         for link in seeds:
-            db.write_url_to_frontier(link, '') # site ID check! - probs need to check domain here - for later links it's gonna be in linkfinder?
-        frontier_url = db.get_url_from_frontier(number_of_threads) # do I need this here?
+            domain, site_id, disallow = general.domain_name(link)
+            db.write_url_to_frontier(link, site_id) # site ID check! - probs need to check domain here - for later links it's gonna be in linkfinder?
+        
+        frontier_url, flag = db.get_url_from_frontier() # do I need this here?
+
+
         print('seed in db')
     except:
         print("No more urls")
 
 
 # Create worker threads
-while frontier_url != -1 and len(frontier_url) != 0:
+while flag != -1: # and len(frontier_url) != 0:
     i = 0
     threads = []
 
@@ -41,6 +46,6 @@ while frontier_url != -1 and len(frontier_url) != 0:
     for th in threads:
         th.join()
     
-    frontier_url = db.get_url_from_frontier(number_of_threads)
+    frontier_url, flag = db.get_url_from_frontier()
 
 

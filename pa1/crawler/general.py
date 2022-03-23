@@ -1,5 +1,4 @@
 import hashlib
-from imp import get_frozen_object
 import socket
 from urllib.parse import urlparse
 from url_normalize import url_normalize
