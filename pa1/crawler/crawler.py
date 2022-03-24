@@ -35,6 +35,7 @@ def crawl_page(url, crawl_delay, site_id):
     #crawl_delay, site_id = db.get_crawl_delay_siteid(domain_name(url))
 
     try:
+        time.sleep(crawl_delay+1)
         response = requests.head(url, allow_redirects=True, timeout=2)
         http_status_code = response.status_code
         page_type_code_raw = response.headers['content-type']
@@ -45,7 +46,7 @@ def crawl_page(url, crawl_delay, site_id):
     except Exception as e:
         print("Request head failed :", e)
 
-        time.sleep(crawl_delay)
+        time.sleep(crawl_delay+1)
         response = requests.get(url, allow_redirects=True, timeout=4)
         http_status_code = response.status_code
         page_type_code_raw = response.headers['content-type']
@@ -170,12 +171,12 @@ def get_urls(driver):
 
 
 def clean_urls(possible_urls):
-    
+    new_urls = []
+    site_ids = []
     number = 0
 
     for url in possible_urls:
-        new_urls = []
-        site_ids = []
+        
 
         if "javascript" in url.lower():
             continue

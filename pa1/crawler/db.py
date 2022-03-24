@@ -10,7 +10,7 @@ lock = threading.Lock()
 def get_crawl_delay_siteid(domain):
     with lock:
         crawl_delay = 5
-        site_id = ''
+        site_id = 0
         try:
             conn = psycopg2.connect(host="localhost", user="crawler", password="SecretPassword")
             conn.autocommit = True
@@ -30,7 +30,7 @@ def get_crawl_delay_siteid(domain):
             return crawl_delay, site_id
         
         except Exception as error:
-            print("Error geting frontier size: ", error)
+            print("Error geting crawl delay: ", error)
             return crawl_delay, site_id
 
         finally:
@@ -138,7 +138,8 @@ def write_domain_to_site(domain):
                 
 
             except Exception as e:
-                print(e)
+                print("Error getting site id and disallow (site doesnt exist): ", e)
+                conn.rollback()
 
             if index == -1:
                 try:
@@ -151,7 +152,8 @@ def write_domain_to_site(domain):
                     index = cur.fetchone()[0]
 
                 except Exception as e:
-                    print(e)          
+                    print("Error writing new site:", e)
+                    conn.rollback()          
 
 
             cur.close()
@@ -190,7 +192,7 @@ def update_site(siteid, domain, robots_content, sitemap_content, ip_address, cra
                 cur.close()
 
             except (Exception, psycopg2.DatabaseError) as error:
-                print("Failed update_site: ", error)
+                print("Failed to update site: ", error)
 
             finally:
                 if conn is not None:
@@ -217,7 +219,8 @@ def write_url_to_frontier(number, links, site_ids):
                     index = cur.fetchone()[0]
 
                 except Exception as e:
-                    print(e)
+                    print("Error writing URL to frontir: ", e)
+                    conn.rollback()
 
                 if index == -1:
                     try:
@@ -235,22 +238,25 @@ def write_url_to_frontier(number, links, site_ids):
                         cur.execute(sql3, (index, index))
 
                     except Exception as e:
-                        print(e)
-                        print('failed to log link')
-                        print(e)
+                        print("Error writing to frontir", e)
+                        conn.rollback()
+
 
             else:
 
                 for link in links:
                     i = links.index(link)
+                    index = -1
                     # Check if url exists in db
                     try:
                         sql1 = 'SELECT id FROM crawldb.page WHERE url = %s;'
                         cur.execute(sql1, (link,))
                         index = cur.fetchone()[0]
 
+                        print(index)
+
                     except Exception as e:
-                        print(e)
+                        conn.rollback()
 
                     if index == -1:
                         try:
@@ -268,7 +274,7 @@ def write_url_to_frontier(number, links, site_ids):
                             cur.execute(sql4, (index, index))
 
                         except Exception as e:
-                            print(e)
+                            conn.rollback()
                             print('failed to log link')
                             print(e)
                     i = i + 1
@@ -289,11 +295,12 @@ def write_url_to_frontier(number, links, site_ids):
 # Update page
 def update_page(site_id, page_type_code, url, html_content, http_status_code, accessed_time, hash, last_accessed_time):
         with lock:
-            try:
-                conn = psycopg2.connect(host="localhost", user="crawler", password="SecretPassword")
-                conn.autocommit = True
+            conn = psycopg2.connect(host="localhost", user="crawler", password="SecretPassword")
+            conn.autocommit = True
 
-                cur =conn.cursor()
+            cur =conn.cursor()
+            try:
+                
 
                 id = -1
                 index = -1
@@ -303,10 +310,13 @@ def update_page(site_id, page_type_code, url, html_content, http_status_code, ac
                 try:
                     sql = 'SELECT id FROM crawldb.page WHERE page_hash = %s;'
                     cur.execute(sql, (hash,))
-                    index = cur.fetchone()[0]
+                    if cur.rowcount != 0:
+                        #list(cur.fetchone())[0]
+                        index = cur.fetchone()[0]
 
                 except Exception as e:
                     print(e)
+                    conn.rollback()
 
                 if index == -1:
                     try:
@@ -326,7 +336,7 @@ def update_page(site_id, page_type_code, url, html_content, http_status_code, ac
                         cur.execute(sql3, (last_accessed_time, site_id,))
 
                         print('Logged into page: '+ url)
-                        print('ID: ', id)
+                        print('ID: ', id) #Popravi, ker ni -1
 
                     except Exception as e:
                         print("Failed to update page:" +e)
@@ -353,6 +363,7 @@ def update_page(site_id, page_type_code, url, html_content, http_status_code, ac
 
                     except Exception as e:
                         print(e)
+                        conn.rollback()
                 
                 cur.close()
 
@@ -403,7 +414,7 @@ def write_data(page_type_code, url, http_status_code, accessed_time, last_access
                 cur.close()
 
             except (Exception, psycopg2.DatabaseError) as error:
-                print("Failed: ", error)
+                print("Failed do write data: ", error)
 
             finally:
                 if conn is not None:
@@ -433,6 +444,7 @@ def write_img(number,new_urls, site_ids, page_type_code, content_type, accessed_
 
                 except Exception as e:
                     print(e)
+                    conn.rollback()
 
                 if index == -1:
                     try:
@@ -451,6 +463,7 @@ def write_img(number,new_urls, site_ids, page_type_code, content_type, accessed_
 
                     except Exception as e:
                         print(e)
+                        conn.rollback()
 
 
             else:
@@ -469,6 +482,7 @@ def write_img(number,new_urls, site_ids, page_type_code, content_type, accessed_
 
                     except Exception as e:
                         print(e)
+                        conn.rollback()
 
                     if index == -1:
                         try:
@@ -491,6 +505,7 @@ def write_img(number,new_urls, site_ids, page_type_code, content_type, accessed_
 
                         except Exception as e:
                             print(e)
+                            conn.rollback()
 
                     i = i + 1
 

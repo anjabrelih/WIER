@@ -6,6 +6,7 @@ from url_normalize import url_normalize
 import urllib.request
 import io
 from validator_collection import validators
+from zmq import NULL
 import db
 import time
 
@@ -64,10 +65,13 @@ def domain_name_new(url):
             disallow = {}
             crawl_delay = 5
             last_accessed_time = int(time.time())
+            ip_address = NULL
 
         ip_address = get_ip_address(domain)
         db.update_site(site_id, domain, robots_content, sitemap_content, ip_address, crawl_delay, last_accessed_time, disallow)
         print('bd domain updated')
+        url = check_potential_url(domain)
+        db.write_url_to_frontier(1, url, site_id) # write domain to frontier
         
     return domain, site_id, disallow
     
