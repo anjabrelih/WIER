@@ -1,6 +1,7 @@
 import hashlib
 import socket
 from urllib.parse import urlparse
+from attr import validate
 from url_normalize import url_normalize
 import urllib.request
 import io
@@ -33,27 +34,42 @@ def url_canonical(url):
     return url_can_norm
 
 
+# We dont need this
 # Get (sub)domain name (output example: www.gov.si)
 def domain_name(url):
-        domain = urlparse(url).netloc
-        site_id, flag, disallow = db.write_domain_to_site(domain)
+    domain = urlparse(url).netloc
 
-        # new domain
-        if flag == -1:
-            try:
-                robots_content, sitemap_content, disallow, crawl_delay, last_accessed_time = get_robots_txt(domain)
-            except:
-                robots_content = ''
-                sitemap_content = ''
-                disallow = ''
-                crawl_delay = 5
-                last_accessed_time = int(time.time())
+    return domain
 
-            ip_address = get_ip_address(domain)
-            db.update_site(site_id, domain, robots_content, sitemap_content, ip_address, crawl_delay, last_accessed_time)
-            print('bd domain updated')
+
+# Get (sub)domain name (output example: www.gov.si) when getting links from page
+def domain_name_new(url):
+    url = correct_url(url)
+    domain = urlparse(url).netloc
+
+    if domain.startswith("www"):
+        pass
+    else:
+        domain = "www."+domain
+
+    site_id, flag, disallow = db.write_domain_to_site(domain)
+
+    # new domain
+    if flag == -1 and site_id != -1:
+        try:
+            robots_content, sitemap_content, disallow, crawl_delay, last_accessed_time = get_robots_txt(domain)
+        except:
+            robots_content = ''
+            sitemap_content = ''
+            disallow = {}
+            crawl_delay = 5
+            last_accessed_time = int(time.time())
+
+        ip_address = get_ip_address(domain)
+        db.update_site(site_id, domain, robots_content, sitemap_content, ip_address, crawl_delay, last_accessed_time, disallow)
+        print('bd domain updated')
         
-        return domain, site_id, disallow
+    return domain, site_id, disallow
     
 
 
@@ -124,3 +140,25 @@ def get_content_type(response):
         content_type = 'HTML'
     return content_type
     
+
+# Check potential url
+def check_potential_url(url):
+    try:
+        url = url_canonical(url)
+        validated = validators.url(url)
+        if validated.startswith("https://"):
+            validated = validated[8:]
+        if validated.startswith("http://"):
+            validated = validated[7:]
+        if validated.endswith("/"):
+            validated = validated[:-1]
+        if validated.startswith("www"):
+            pass
+        else:
+            validated = "www."+validated
+
+    except:
+        validated = -1
+
+    return validated
+

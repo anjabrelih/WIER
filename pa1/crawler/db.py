@@ -6,8 +6,8 @@ import time
 # Set threading lock for database
 lock = threading.Lock()
 
-# Get crawl delay
-def get_crawl_delay(domain):
+# Get crawl delay and site id
+def get_crawl_delay_siteid(domain):
     with lock:
         crawl_delay = 5
         site_id = ''
@@ -17,9 +17,14 @@ def get_crawl_delay(domain):
 
             cur =conn.cursor()
             
-            sql = 'SELECT crawl_delay, id FROM crawldb.site WHERE domain = %s;'
+            sql = 'SELECT crawl_delay FROM crawldb.site WHERE domain = %s;'
             cur.execute(sql, (domain,))
-            crawl_delay, site_id = cur.fetchall()[0][1] # zakaj site ID? bit more tud v poizvedbi
+            crawl_delay = cur.fetchone()[0]
+
+            # Get site id
+            sql1 = "SELECT id FROM crawldb.site WHERE domain = %s"
+            cur.execute(sql1, (domain,))
+            site_id = cur.fetchone()[0]
 
             cur.close()
             return crawl_delay, site_id
@@ -31,6 +36,7 @@ def get_crawl_delay(domain):
         finally:
             if conn is not None:
                 conn.close()
+
 
 # Get frontier size
 def get_frontier_size():
@@ -56,7 +62,6 @@ def get_frontier_size():
             if conn is not None:
                 conn.close()
 
-#print(get_frontier_size())
 
 
 # Get URL from frontier (one at the time)
@@ -70,57 +75,39 @@ def get_url_from_frontier():
             cur =conn.cursor()
 
             # Get urls from frontier
-            sql = "SELECT (url, site_id) FROM crawldb.page WHERE page_type_code = 'FRONTIER' ORDER BY id ASC LIMIT 100"
-
-              #      INNER JOIN crawldb.site ON (page.site_id = site.id) WHERE 
-                #    (last_accessed_time <=  (%s - crawl_delay))
-                #    ORDER BY page.id ASC LIMIT 1;'''
-            
+            sql = "SELECT url FROM crawldb.page WHERE page_type_code = 'FRONTIER' ORDER BY id ASC LIMIT 1"
             cur.execute(sql, )
-            urls = cur.fetchall()
-            print(urls)
+            url = cur.fetchone()[0]
 
-            for url in urls:
-
-                frontier_url = -1
-                print(url[1])
-
-                # Check crawl-delay
-                sql = 'SELECT (crawl_delay, last_accessed_time) FROM crawldb.site WHERE id = %s'
-                cur.execute(sql, (url[1]))
-                delay_time = cur.fetchall()
-
-                lat = delay_time[1]
-                print(lat)
-                delay = delay_time[0]
-                print(delay)
-
-                if delay_time[1] <= (int(time.time()) - delay_time[0]):
-
-                    # Update page_type_code
-                    sql = 'UPDATE crawldb.page SET page_type_code = NULL WHERE url = %s;'
-                    cur.execute(sql, (url[0],))
-                    frontier_url = url[0]
+            # Get site id
+            sql1 = "SELECT site_id FROM crawldb.page WHERE url = %s"
+            cur.execute(sql1, (url,))
+            site_id = cur.fetchone()[0]
 
 
+            # Update page_type_code
+            sql2 = 'UPDATE crawldb.page SET page_type_code = NULL WHERE url = %s;'
+            cur.execute(sql2, (url,))
 
-            # Get allowed domains
-            #sql = "SELECT id FROM crawldb.site WHERE last_accessed_time <= (%s - crawl_delay)"
-            #cur.execute(sql, (int(time.time()),))
-            #sitesite_id = cur.fetchall()
+            # Get crawl delay
+            sql3 = "SELECT crawl_delay FROM crawldb.site WHERE id = %s"
+            cur.execute(sql3, (site_id,))
+            crawl_delay = cur.fetchone()[0]
 
-
-    
-
+            # Get last access time
+            sql4 = "SELECT last_accessed_time FROM crawldb.site WHERE id = %s"
+            cur.execute(sql4, (site_id,))
+            last_accessed_time = cur.fetchone()[0]
+                
 
             cur.close()
 
 
-            return frontier_url
+            return url, site_id, crawl_delay, last_accessed_time
         
         except Exception as error:
-            print("Error geting URLs from frontier: ", error)
-            return -1
+            print("Error geting URL from frontier: ", error)
+            return -1, -1, -1, -1
 
         finally:
             if conn is not None:
@@ -130,7 +117,7 @@ def get_url_from_frontier():
 def write_domain_to_site(domain):
     with lock:
         index = -1
-        flag = -1 # to ni ok!
+        flag = -1
         disallow = []
         try:
             conn = psycopg2.connect(host="localhost", user="crawler", password="SecretPassword")
@@ -145,26 +132,26 @@ def write_domain_to_site(domain):
                 if index != -1:
                     flag = 1
 
-                sql = 'SELECT disallow FROM crawldb.site WHERE domain = %s;'
-                cur.execute(sql, (domain,))
+                sql1 = 'SELECT disallow FROM crawldb.site WHERE domain = %s;'
+                cur.execute(sql1, (domain,))
                 disallow = cur.fetchall()
                 
 
             except Exception as e:
-                conn.rollback()
+                print(e)
 
             if index == -1:
                 try:
                     # Add new site
-                    sql = 'INSERT INTO crawldb.site (domain) VALUES (%s);'
-                    cur.execute(sql, (domain,))
+                    sql2 = 'INSERT INTO crawldb.site (domain) VALUES (%s);'
+                    cur.execute(sql2, (domain,))
                     # Get site_id
-                    sql = 'SELECT id FROM crawldb.site WHERE domain = %s;'
-                    cur.execute(sql, (domain,))
+                    sql3 = 'SELECT id FROM crawldb.site WHERE domain = %s;'
+                    cur.execute(sql3, (domain,))
                     index = cur.fetchone()[0]
 
                 except Exception as e:
-                    conn.rollback()          
+                    print(e)          
 
 
             cur.close()
@@ -181,7 +168,7 @@ def write_domain_to_site(domain):
 
 
 # Update site with domain content
-def update_site(siteid, domain, robots_content, sitemap_content, ip_address, crawl_delay, last_accessed_time):
+def update_site(siteid, domain, robots_content, sitemap_content, ip_address, crawl_delay, last_accessed_time, disallow):
     with lock:
             try:
                 conn = psycopg2.connect(host="localhost", user="crawler", password="SecretPassword")
@@ -189,18 +176,21 @@ def update_site(siteid, domain, robots_content, sitemap_content, ip_address, cra
 
                 cur =conn.cursor()
                 
-                sql = '''UPDATE crawldb.site SET robots_content = %s, sitemap_content = %s, ip_address = %s, crawl_delay = %s, last_accessed_time = %s 
-                WHERE id = %s RETURNING id;'''
-                cur.execute(sql, (robots_content, sitemap_content, ip_address, crawl_delay, last_accessed_time, siteid,))
+                sql = "UPDATE crawldb.site SET robots_content = %s,sitemap_content=%s,ip_address = %s,crawl_delay = %s,last_accessed_time = %s,disallow=%s WHERE id=%s"
+                cur.execute(sql, (robots_content, sitemap_content, ip_address, crawl_delay, last_accessed_time, disallow, siteid,))
+
+
+                sql1 = "SELECT id FROM crawldb.site WHERE domain = %s;"
+                cur.execute(sql1, (domain,))
                 id = cur.fetchone()[0]
 
-                print('Logged into site: '+ domain)
+                print('Updated site: '+ domain)
                 print('ID: ', id)
             
                 cur.close()
 
             except (Exception, psycopg2.DatabaseError) as error:
-                print("Failed: ", error)
+                print("Failed update_site: ", error)
 
             finally:
                 if conn is not None:
@@ -227,27 +217,27 @@ def write_url_to_frontier(number, links, site_ids):
                     index = cur.fetchone()[0]
 
                 except Exception as e:
-                    conn.rollback()
+                    print(e)
 
                 if index == -1:
                     try:
                         # Add new url to frontier
-                        sql = 'INSERT INTO crawldb.page (url, site_id, page_type_code) VALUES (%s, %s, %s);'
-                        cur.execute(sql, (links, site_ids, tag,))
+                        sql1 = 'INSERT INTO crawldb.page (url, site_id, page_type_code) VALUES (%s, %s, %s);'
+                        cur.execute(sql1, (links, site_ids, tag,))
 
                         # Get page id
-                        sql = 'SELECT id FROM crawldb.page WHERE url = %s;'
-                        cur.execute(sql, (links,))
+                        sql2 = 'SELECT id FROM crawldb.page WHERE url = %s;'
+                        cur.execute(sql2, (links,))
                         index = cur.fetchone()[0]
 
                         # Add connection to link table
-                        sql = 'INSERT INTO crawldb.link (from_page, to_page) VALUES (%s,%s)'
-                        cur.execute(sql, (index, index))
+                        sql3 = 'INSERT INTO crawldb.link (from_page, to_page) VALUES (%s,%s)'
+                        cur.execute(sql3, (index, index))
 
                     except Exception as e:
                         print(e)
                         print('failed to log link')
-                        conn.rollback()
+                        print(e)
 
             else:
 
@@ -255,32 +245,32 @@ def write_url_to_frontier(number, links, site_ids):
                     i = links.index(link)
                     # Check if url exists in db
                     try:
-                        sql = 'SELECT id FROM crawldb.page WHERE url = %s;'
-                        cur.execute(sql, (link,))
+                        sql1 = 'SELECT id FROM crawldb.page WHERE url = %s;'
+                        cur.execute(sql1, (link,))
                         index = cur.fetchone()[0]
 
                     except Exception as e:
-                        conn.rollback()
+                        print(e)
 
                     if index == -1:
                         try:
                             # Add new url to frontier
-                            sql = 'INSERT INTO crawldb.page (url, site_id, page_type_code) VALUES (%s, %s, %s);'
-                            cur.execute(sql, (link, site_ids[i], tag,))
+                            sql2 = 'INSERT INTO crawldb.page (url, site_id, page_type_code) VALUES (%s, %s, %s);'
+                            cur.execute(sql2, (link, site_ids[i], tag,))
 
                             # Get page id
-                            sql = 'SELECT id FROM crawldb.page WHERE url = %s;'
-                            cur.execute(sql, (link,))
+                            sql3 = 'SELECT id FROM crawldb.page WHERE url = %s;'
+                            cur.execute(sql3, (link,))
                             index = cur.fetchone()[0]
 
                             # Add connection to link table
-                            sql = 'INSERT INTO crawldb.link (from_page, to_page) VALUES (%s,%s)'
-                            cur.execute(sql, (index, index))
+                            sql4 = 'INSERT INTO crawldb.link (from_page, to_page) VALUES (%s,%s)'
+                            cur.execute(sql4, (index, index))
 
                         except Exception as e:
                             print(e)
                             print('failed to log link')
-                            conn.rollback()
+                            print(e)
                     i = i + 1
 
             cur.close()
@@ -316,50 +306,53 @@ def update_page(site_id, page_type_code, url, html_content, http_status_code, ac
                     index = cur.fetchone()[0]
 
                 except Exception as e:
-                    conn.rollback()
+                    print(e)
 
                 if index == -1:
                     try:
-                        # Update row (as HTML)
-                        sql = '''UPDATE crawldb.page SET page_type_code = %s, html_content = %s, http_status_code = %s, accessed_time = %s,
-                        hash = %s WHERE url = %s;'''
-                        cur.execute(sql, (page_type_code, html_content, http_status_code, accessed_time, hash, url,))
+                        # Update row (as HTML) , html_content = %s, accessed_time = %s, hash = %s
+                        sql1 = "UPDATE crawldb.page SET page_type_code = %s,html_content=%s,http_status_code = %s,accessed_time = %s,page_hash = %s WHERE url=%s"
+                        cur.execute(sql1, (page_type_code, html_content, http_status_code, accessed_time, hash, url,))
+                        #id = cur.fetchone()[0]
+                        print('Logged content to page:' +url)#+id)
                         
-                        # Get page id
-                        sql = 'SELECT id FROM crawldb.page WHERE page_hash = %s;'
-                        cur.execute(sql, (hash,))
-                        id = cur.fetchone()[0]
+                        # Get site id
+                        #sql2 = 'SELECT site_id FROM crawldb.page WHERE page_hash = %s;'
+                        #cur.execute(sql2, (hash,))
+                        #site_id = cur.fetchone()[0]
 
                         # Update last accessed time for domain
-                        sql = 'UPDATE crawldb.site SET last_accessed_time = %s WHERE site_id = %s;'
-                        cur.execute(sql, (last_accessed_time, site_id,))
+                        sql3 = 'UPDATE crawldb.site SET last_accessed_time = %s WHERE id = %s;'
+                        cur.execute(sql3, (last_accessed_time, site_id,))
 
                         print('Logged into page: '+ url)
                         print('ID: ', id)
 
                     except Exception as e:
-                        conn.rollback()
+                        print("Failed to update page:" +e)
+                        
                 
                 if index != -1:
                     try:
                         # Update row (as DUPLICATE)
-                        sql = 'UPDATE crawldb.page SET page_type_code = %s, accessed_time = %s WHERE url = %s;'
-                        cur.execute(sql, (tag_duplicate, accessed_time, url,))
+                        sql4 = 'UPDATE crawldb.page SET page_type_code = %s, accessed_time = %s WHERE url = %s RETURNING id;'
+                        cur.execute(sql4, (tag_duplicate, accessed_time, url,))
+                        id = cur.fetchone()[0]
                         
                         # Get page id
-                        sql = 'SELECT id FROM crawldb.page WHERE page_hash = %s;'
-                        cur.execute(sql, (hash,))
-                        id = cur.fetchone()[0]
+                        sql5 = 'SELECT site_id FROM crawldb.page WHERE page_hash = %s;'
+                        cur.execute(sql5, (hash,))
+                        site_id = cur.fetchone()[0]
 
                         # Update last accessed time for domain
-                        sql = 'UPDATE crawldb.page SET last_accessed_time = %s WHERE site_id = %s;'
-                        cur.execute(sql, (last_accessed_time, site_id,))
+                        #sql6 = 'UPDATE crawldb.page SET last_accessed_time = %s WHERE site_id = %s;'
+                        #cur.execute(sql6, (last_accessed_time, site_id,))
 
                         print('Logged into page as DUPLICATE: '+ url)
                         print('ID: ', id)
 
                     except Exception as e:
-                        conn.rollback()
+                        print(e)
                 
                 cur.close()
 
@@ -387,19 +380,24 @@ def write_data(page_type_code, url, http_status_code, accessed_time, last_access
                 
 
                 # Get id and site_id
-                sql = 'SELECT (id, site_id) FROM crawldb.page WHERE url = %s;'
-                cur.execute(sql, (url,))
-                page_id, site_id = cur.fetchall()
+                sql1 = 'SELECT id FROM crawldb.page WHERE url = %s;'
+                cur.execute(sql1, (url,))
+                page_id = cur.fetchone()[0]
+                
+
+                # Get id and site_id
+                sql2 = 'SELECT site_id FROM crawldb.page WHERE url = %s;'
+                cur.execute(sql2, (url,))
+                page_id, site_id = cur.fetchone()[0]
                 print('RETURNING page_id SITE id: ', page_id, site_id)
 
-
                 # Write page_data
-                sql = 'INSERT INTO crawldb.page_data (page_id, data_type_code) VALUES (%s,%s)'
-                cur.execute(sql, (page_id, page_data_type,))
+                sql3 = 'INSERT INTO crawldb.page_data (page_id, data_type_code) VALUES (%s,%s)'
+                cur.execute(sql3, (page_id, page_data_type,))
 
                 # Update last accessed time for domain
-                sql = 'UPDATE crawldb.site SET last_accessed_time = %s WHERE site_id = %s;'
-                cur.execute(sql, (last_accessed_time, site_id,))
+                sql4 = 'UPDATE crawldb.site SET last_accessed_time = %s WHERE site_id = %s;'
+                cur.execute(sql4, (last_accessed_time, site_id,))
 
            
                 cur.close()
@@ -415,7 +413,7 @@ def write_data(page_type_code, url, http_status_code, accessed_time, last_access
 # Write image
 def write_img(number,new_urls, site_ids, page_type_code, content_type, accessed_time):
     with lock:
-#add number"""""""""""
+
         index = -1
         try:
             conn = psycopg2.connect(host="localhost", user="crawler", password="SecretPassword")
@@ -434,25 +432,25 @@ def write_img(number,new_urls, site_ids, page_type_code, content_type, accessed_
                     #cur.execute(sql, (line[1],))
 
                 except Exception as e:
-                    conn.rollback()
+                    print(e)
 
                 if index == -1:
                     try:
                         # New image to page
-                        sql = 'INSERT INTO crawldb.page (url, site_id, page_type_code, accessed_time) VALUES (%s, %s, %s, %s);'
-                        cur.execute(sql, (new_urls, site_ids, page_type_code, accessed_time,))
+                        sql1 = 'INSERT INTO crawldb.page (url, site_id, page_type_code, accessed_time) VALUES (%s, %s, %s, %s);'
+                        cur.execute(sql1, (new_urls, site_ids, page_type_code, accessed_time,))
                         
                         # Get id
-                        sql = 'SELECT id FROM crawldb.page WHERE url = %s;'
-                        cur.execute(sql, (new_urls,))
+                        sql2 = 'SELECT id FROM crawldb.page WHERE url = %s;'
+                        cur.execute(sql2, (new_urls,))
                         page_id = cur.fetchone()[0]
 
                         # Add new image to image
-                        sql = 'INSERT INTO crawldb.image (page_id, content_type, accessed_time) VALUES (%s, %s, %s)'
-                        cur.execute(sql, (page_id, content_type, accessed_time))
+                        sql3 = 'INSERT INTO crawldb.image (page_id, content_type, accessed_time) VALUES (%s, %s, %s)'
+                        cur.execute(sql3, (page_id, content_type, accessed_time))
 
                     except Exception as e:
-                        conn.rollback()
+                        print(e)
 
 
             else:
@@ -470,29 +468,29 @@ def write_img(number,new_urls, site_ids, page_type_code, content_type, accessed_
                     #cur.execute(sql, (line[1],))
 
                     except Exception as e:
-                        conn.rollback()
+                        print(e)
 
                     if index == -1:
                         try:
                             # New image to page
-                            sql = 'INSERT INTO crawldb.page (url, site_id, page_type_code, accessed_time) VALUES (%s, %s, %s, %s);'
-                            cur.execute(sql, (link, site_ids[i], page_type_code, accessed_time,))
+                            sql1 = 'INSERT INTO crawldb.page (url, site_id, page_type_code, accessed_time) VALUES (%s, %s, %s, %s);'
+                            cur.execute(sql1, (link, site_ids[i], page_type_code, accessed_time,))
                         
                             # Get id
-                            sql = 'SELECT id FROM crawldb.page WHERE url = %s;'
-                            cur.execute(sql, (link,))
+                            sql2 = 'SELECT id FROM crawldb.page WHERE url = %s;'
+                            cur.execute(sql2, (link,))
                             page_id = cur.fetchone()[0]
 
                             # Add new image to image
-                            sql = 'INSERT INTO crawldb.image (page_id, content_type, accessed_time) VALUES (%s, %s, %s)'
-                            cur.execute(sql, (page_id, content_type, accessed_time))
+                            sql3 = 'INSERT INTO crawldb.image (page_id, content_type, accessed_time) VALUES (%s, %s, %s)'
+                            cur.execute(sql3, (page_id, content_type, accessed_time))
 
                        # # Update site
                        # sql = 'UPDATE last_accessed_time FROM crawldb.site WHERE id = %s'
                         #cur.execute(sql, (line[1],))
 
                         except Exception as e:
-                            conn.rollback()
+                            print(e)
 
                     i = i + 1
 

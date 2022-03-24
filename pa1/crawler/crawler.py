@@ -1,5 +1,6 @@
 from hashlib import new
 from urllib.parse import urljoin
+from attr import validate
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 import time
@@ -14,7 +15,7 @@ from general import *
 # Edit parameters if needed
 web_driver_location = "C:/Users/anjab/Downloads/chromedriver_win32/chromedriver"
 user_agent = "user-agent=fri-ieps-OSKAR"
-timeout = 3
+timeout = 4
 
 # Options (do not edit)
 chrome_options = Options()
@@ -25,12 +26,16 @@ driver = webdriver.Chrome(executable_path=web_driver_location, options=chrome_op
 
 
 # Crawl page
-def crawl_page(url):
+def crawl_page(url, crawl_delay, site_id):
 
-    crawl_delay, site_id = db.get_crawl_delay(domain_name(url))
+    if url.startswith('www'):
+        url = 'http://'+url
+    else:
+        url = 'http://www.'
+    #crawl_delay, site_id = db.get_crawl_delay_siteid(domain_name(url))
 
     try:
-        response = requests.head(url, allow_redirects=True, timeout=timeout)
+        response = requests.head(url, allow_redirects=True, timeout=2)
         http_status_code = response.status_code
         page_type_code_raw = response.headers['content-type']
         page_type_code = get_content_type(page_type_code_raw)
@@ -137,7 +142,7 @@ def get_urls(driver):
     for link in links_h:
         try:
             l = link.get_attribute('href')
-            if 'gov.si' in l:
+            if '.gov.si' in l:
                 possible_urls.append(l)
         except:
             pass
@@ -145,7 +150,7 @@ def get_urls(driver):
     for link in links_b:
         try:
             l = link.get_attribute('onclick')
-            if 'gov.si' in l:
+            if '.gov.si' in l:
                 possible_urls.append(l)
         except:
             pass
@@ -153,7 +158,7 @@ def get_urls(driver):
     for link in links_s:
         try:
             l = link.get_attribute("innerText")
-            if 'gov.si' in l:
+            if '.gov.si' in l:
                 possible_urls.append(l)
         except:
             pass
@@ -165,34 +170,44 @@ def get_urls(driver):
 
 
 def clean_urls(possible_urls):
-    new_urls = []
-    site_ids = []
+    
     number = 0
 
     for url in possible_urls:
+        new_urls = []
+        site_ids = []
+
         if "javascript" in url.lower():
             continue
+        if url.startswith("mailto"):
+            continue
+
 
         url = urldefrag(url)[0]
-        url = url_canonical(url)
+        #url = url_canonical(url)
 
-        if url.endwith("/"):
+        if url.endswith("/"):
             url = url[:-1]
 
-        if url.endwith("/index.html"):
+        if url.endswith("/index.html"):
             url = url[:-11]
 
-        if url.endwith("/index.php"):
+        if url.endswith("/index.php"):
             url = url[:-10]
 
         
-        domain, site_id, disallow = domain_name(url)
+        validated_url = check_potential_url(url)
 
-        for disa in disallow:
-            if disa not in url:
-                continue
+        if validated_url == -1:
+            continue
 
-        new_urls.append(url)
+        domain, site_id, disallow = domain_name_new(validated_url)
+
+        #for disa in disallow:
+            #if disa not in url:
+               # continue
+
+        new_urls.append(validated_url)
         site_ids.append(site_id)
         number = number + 1
 
