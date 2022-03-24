@@ -19,12 +19,14 @@ def get_crawl_delay_siteid(domain):
             
             sql = 'SELECT crawl_delay FROM crawldb.site WHERE domain = %s;'
             cur.execute(sql, (domain,))
-            crawl_delay = cur.fetchone()[0]
+            if cur.rowcount != 0:
+                crawl_delay = cur.fetchone()[0]
 
             # Get site id
             sql1 = "SELECT id FROM crawldb.site WHERE domain = %s"
             cur.execute(sql1, (domain,))
-            site_id = cur.fetchone()[0]
+            if cur.rowcount != 0:
+                site_id = cur.fetchone()[0]
 
             cur.close()
             return crawl_delay, site_id
@@ -77,7 +79,8 @@ def get_url_from_frontier():
             # Get urls from frontier
             sql = "SELECT url FROM crawldb.page WHERE page_type_code = 'FRONTIER' ORDER BY id ASC LIMIT 1"
             cur.execute(sql, )
-            url = cur.fetchone()[0]
+            if cur.rowcount != 0:
+                url = cur.fetchone()[0]
 
             # Get site id
             sql1 = "SELECT site_id FROM crawldb.page WHERE url = %s"
@@ -128,13 +131,15 @@ def write_domain_to_site(domain):
             try:
                 sql = 'SELECT id FROM crawldb.site WHERE domain = %s;'
                 cur.execute(sql, (domain,))
-                index = cur.fetchone()[0]
-                if index != -1:
-                    flag = 1
+                if cur.rowcount != 0:
+                    index = cur.fetchone()[0]
+                    if index != -1:
+                        flag = 1
 
                 sql1 = 'SELECT disallow FROM crawldb.site WHERE domain = %s;'
                 cur.execute(sql1, (domain,))
-                disallow = cur.fetchall()
+                if cur.rowcount != 0:
+                    disallow = cur.fetchall()
                 
 
             except Exception as e:
@@ -216,7 +221,8 @@ def write_url_to_frontier(number, links, site_ids):
                 try:
                     sql = 'SELECT id FROM crawldb.page WHERE url = %s;'
                     cur.execute(sql, (links,))
-                    index = cur.fetchone()[0]
+                    if cur.rowcount != 0:
+                        index = cur.fetchone()[0]
 
                 except Exception as e:
                     print("Error writing URL to frontir: ", e)
@@ -233,10 +239,6 @@ def write_url_to_frontier(number, links, site_ids):
                         cur.execute(sql2, (links,))
                         index = cur.fetchone()[0]
 
-                        # Add connection to link table
-                        sql3 = 'INSERT INTO crawldb.link (from_page, to_page) VALUES (%s,%s)'
-                        cur.execute(sql3, (index, index))
-
                     except Exception as e:
                         print("Error writing to frontir", e)
                         conn.rollback()
@@ -251,7 +253,8 @@ def write_url_to_frontier(number, links, site_ids):
                     try:
                         sql1 = 'SELECT id FROM crawldb.page WHERE url = %s;'
                         cur.execute(sql1, (link,))
-                        index = cur.fetchone()[0]
+                        if cur.rowcount != 0:
+                            index = cur.fetchone()[0]
 
                         print(index)
 
@@ -269,9 +272,6 @@ def write_url_to_frontier(number, links, site_ids):
                             cur.execute(sql3, (link,))
                             index = cur.fetchone()[0]
 
-                            # Add connection to link table
-                            sql4 = 'INSERT INTO crawldb.link (from_page, to_page) VALUES (%s,%s)'
-                            cur.execute(sql4, (index, index))
 
                         except Exception as e:
                             conn.rollback()
@@ -295,12 +295,11 @@ def write_url_to_frontier(number, links, site_ids):
 # Update page
 def update_page(site_id, page_type_code, url, html_content, http_status_code, accessed_time, hash, last_accessed_time):
         with lock:
-            conn = psycopg2.connect(host="localhost", user="crawler", password="SecretPassword")
-            conn.autocommit = True
-
-            cur =conn.cursor()
             try:
-                
+                conn = psycopg2.connect(host="localhost", user="crawler", password="SecretPassword")
+                conn.autocommit = True
+
+                cur =conn.cursor()
 
                 id = -1
                 index = -1
@@ -321,15 +320,10 @@ def update_page(site_id, page_type_code, url, html_content, http_status_code, ac
                 if index == -1:
                     try:
                         # Update row (as HTML) , html_content = %s, accessed_time = %s, hash = %s
-                        sql1 = "UPDATE crawldb.page SET page_type_code = %s,html_content=%s,http_status_code = %s,accessed_time = %s,page_hash = %s WHERE url=%s"
+                        sql1 = "UPDATE crawldb.page SET page_type_code = %s,html_content=%s,http_status_code = %s,accessed_time = %s,page_hash = %s WHERE url=%s RETURNING id;"
                         cur.execute(sql1, (page_type_code, html_content, http_status_code, accessed_time, hash, url,))
-                        #id = cur.fetchone()[0]
-                        print('Logged content to page:' +url)#+id)
-                        
-                        # Get site id
-                        #sql2 = 'SELECT site_id FROM crawldb.page WHERE page_hash = %s;'
-                        #cur.execute(sql2, (hash,))
-                        #site_id = cur.fetchone()[0]
+                        id = cur.fetchone()[0]
+                        print('Logged content to page:' +id)
 
                         # Update last accessed time for domain
                         sql3 = 'UPDATE crawldb.site SET last_accessed_time = %s WHERE id = %s;'
@@ -347,16 +341,15 @@ def update_page(site_id, page_type_code, url, html_content, http_status_code, ac
                         # Update row (as DUPLICATE)
                         sql4 = 'UPDATE crawldb.page SET page_type_code = %s, accessed_time = %s WHERE url = %s RETURNING id;'
                         cur.execute(sql4, (tag_duplicate, accessed_time, url,))
-                        id = cur.fetchone()[0]
-                        
-                        # Get page id
-                        sql5 = 'SELECT site_id FROM crawldb.page WHERE page_hash = %s;'
-                        cur.execute(sql5, (hash,))
-                        site_id = cur.fetchone()[0]
+                        id = cur.fetchone()[0]                 
+
+                        # Link duplicate
+                        sql6 = 'INSERT INTO crawldb.link (from_page, to_page) VALUES (%s,%s)'
+                        cur.execute(sql6, (index, id))
 
                         # Update last accessed time for domain
-                        #sql6 = 'UPDATE crawldb.page SET last_accessed_time = %s WHERE site_id = %s;'
-                        #cur.execute(sql6, (last_accessed_time, site_id,))
+                        sql7 = 'UPDATE crawldb.page SET last_accessed_time = %s WHERE site_id = %s;'
+                        cur.execute(sql7, (last_accessed_time, site_id,))
 
                         print('Logged into page as DUPLICATE: '+ url)
                         print('ID: ', id)
@@ -386,21 +379,22 @@ def write_data(page_type_code, url, http_status_code, accessed_time, last_access
                 cur =conn.cursor()
                 
                 # Update page
-                sql = 'UPDATE crawldb.page (page_type_code, http_status_code, accessed_time) VALUES (%s, %s, %s) WHERE url = %s;'
+                sql = 'UPDATE crawldb.page (page_type_code, http_status_code, accessed_time) VALUES (%s, %s, %s) WHERE url = %s RETURNING id;'
                 cur.execute(sql, (page_type_code, http_status_code, accessed_time, url,))
+                page_id = cur.fetchone()[0]
                 
 
                 # Get id and site_id
-                sql1 = 'SELECT id FROM crawldb.page WHERE url = %s;'
-                cur.execute(sql1, (url,))
-                page_id = cur.fetchone()[0]
+                #sql1 = 'SELECT id FROM crawldb.page WHERE url = %s;'
+                #cur.execute(sql1, (url,))
+                #page_id = cur.fetchone()[0]
                 
 
                 # Get id and site_id
                 sql2 = 'SELECT site_id FROM crawldb.page WHERE url = %s;'
                 cur.execute(sql2, (url,))
-                page_id, site_id = cur.fetchone()[0]
-                print('RETURNING page_id SITE id: ', page_id, site_id)
+                site_id = cur.fetchone()[0]
+                print('RETURNING page_id & SITE id from DOCUMENT insert: ', page_id, site_id)
 
                 # Write page_data
                 sql3 = 'INSERT INTO crawldb.page_data (page_id, data_type_code) VALUES (%s,%s)'
@@ -436,7 +430,8 @@ def write_img(number,new_urls, site_ids, page_type_code, content_type, accessed_
                 try:
                     sql = 'SELECT id FROM crawldb.page WHERE url = %s;'
                     cur.execute(sql, (new_urls,))
-                    index = cur.fetchone()[0]
+                    if cur.rowcount != 0:
+                        index = cur.fetchone()[0]
 
                    # # Update site
                     #sql = 'UPDATE last_accessed_time FROM crawldb.site WHERE id = %s'
@@ -449,13 +444,14 @@ def write_img(number,new_urls, site_ids, page_type_code, content_type, accessed_
                 if index == -1:
                     try:
                         # New image to page
-                        sql1 = 'INSERT INTO crawldb.page (url, site_id, page_type_code, accessed_time) VALUES (%s, %s, %s, %s);'
+                        sql1 = 'INSERT INTO crawldb.page (url, site_id, page_type_code, accessed_time) VALUES (%s, %s, %s, %s) RETURNING id;'
                         cur.execute(sql1, (new_urls, site_ids, page_type_code, accessed_time,))
+                        page_id = cur.fetchone()[0]
                         
                         # Get id
-                        sql2 = 'SELECT id FROM crawldb.page WHERE url = %s;'
-                        cur.execute(sql2, (new_urls,))
-                        page_id = cur.fetchone()[0]
+                        #sql2 = 'SELECT id FROM crawldb.page WHERE url = %s;'
+                        #cur.execute(sql2, (new_urls,))
+                        #page_id = cur.fetchone()[0]
 
                         # Add new image to image
                         sql3 = 'INSERT INTO crawldb.image (page_id, content_type, accessed_time) VALUES (%s, %s, %s)'
@@ -474,7 +470,8 @@ def write_img(number,new_urls, site_ids, page_type_code, content_type, accessed_
                     try:
                         sql = 'SELECT id FROM crawldb.page WHERE url = %s;'
                         cur.execute(sql, (link,))
-                        index = cur.fetchone()[0]
+                        if cur.rowcount != 0:
+                            index = cur.fetchone()[0]
 
                    # # Update site
                     #sql = 'UPDATE last_accessed_time FROM crawldb.site WHERE id = %s'
@@ -487,13 +484,14 @@ def write_img(number,new_urls, site_ids, page_type_code, content_type, accessed_
                     if index == -1:
                         try:
                             # New image to page
-                            sql1 = 'INSERT INTO crawldb.page (url, site_id, page_type_code, accessed_time) VALUES (%s, %s, %s, %s);'
+                            sql1 = 'INSERT INTO crawldb.page (url, site_id, page_type_code, accessed_time) VALUES (%s, %s, %s, %s) RETURNING id;'
                             cur.execute(sql1, (link, site_ids[i], page_type_code, accessed_time,))
+                            page_id = cur.fetchone()[0]
                         
                             # Get id
-                            sql2 = 'SELECT id FROM crawldb.page WHERE url = %s;'
-                            cur.execute(sql2, (link,))
-                            page_id = cur.fetchone()[0]
+                            #sql2 = 'SELECT id FROM crawldb.page WHERE url = %s;'
+                            #cur.execute(sql2, (link,))
+                            #page_id = cur.fetchone()[0]
 
                             # Add new image to image
                             sql3 = 'INSERT INTO crawldb.image (page_id, content_type, accessed_time) VALUES (%s, %s, %s)'

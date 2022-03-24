@@ -46,13 +46,25 @@ def crawl_page(url, crawl_delay, site_id):
     except Exception as e:
         print("Request head failed :", e)
 
-        time.sleep(crawl_delay+1)
-        response = requests.get(url, allow_redirects=True, timeout=4)
-        http_status_code = response.status_code
-        page_type_code_raw = response.headers['content-type']
-        page_type_code = get_content_type(page_type_code_raw)
-        accessed_time = datetime.datetime.now() # with HTML we'll override it
-        last_accessed_time = int(time.time()) # with HTML we'll override it
+        try:
+
+            time.sleep(crawl_delay+1)
+            response = requests.get(url, allow_redirects=True, timeout=4)
+            http_status_code = response.status_code
+            page_type_code_raw = response.headers['content-type']
+            page_type_code = get_content_type(page_type_code_raw)
+            accessed_time = datetime.datetime.now() # with HTML we'll override it
+            last_accessed_time = int(time.time()) # with HTML we'll override it
+
+        except:
+
+            time.sleep(crawl_delay*2)
+            response = requests.get(url, allow_redirects=True, timeout=4)
+            http_status_code = response.status_code
+            page_type_code_raw = response.headers['content-type']
+            page_type_code = get_content_type(page_type_code_raw)
+            accessed_time = datetime.datetime.now() # with HTML we'll override it
+            last_accessed_time = int(time.time()) # with HTML we'll override it
     
 
 
@@ -70,7 +82,8 @@ def crawl_page(url, crawl_delay, site_id):
         hash = html_hash(html_content)
 
         # Update page in database
-        db.update_page(site_id, page_type_code, url, html_content, http_status_code, accessed_time, hash, last_accessed_time)
+        write_url = check_potential_url(url)
+        db.update_page(site_id, page_type_code, write_url, html_content, http_status_code, accessed_time, hash, last_accessed_time)
 
         # get URLs and site_ids from page
         new_urls, site_ids, number = get_urls(driver)
@@ -90,11 +103,14 @@ def crawl_page(url, crawl_delay, site_id):
                     image_links.append(l)
                     
             new_urls, site_ids, number = clean_urls(image_links)
+            write_url = check_potential_url(new_urls)
+
+
             accessed_time = datetime.datetime.now()
             page_type_code = 'BINARY'
             content_type = 'image'
 
-            db.write_img(number, new_urls, site_ids, page_type_code, content_type, accessed_time)
+            db.write_img(number, write_url, site_ids, page_type_code, content_type, accessed_time)
         except:
             pass
 
@@ -127,7 +143,8 @@ def crawl_page(url, crawl_delay, site_id):
 
             try:
 
-                db.write_data(page_type_code, url, http_status_code, accessed_time, last_accessed_time, page_data_type)
+                write_url = check_potential_url(url)
+                db.write_data(page_type_code, write_url, http_status_code, accessed_time, last_accessed_time, page_data_type)
             except:
                 pass
             
