@@ -65,13 +65,12 @@ def domain_name_new(url):
             disallow = {}
             crawl_delay = 5
             last_accessed_time = int(time.time())
-            ip_address = NULL
 
         ip_address = get_ip_address(domain)
         db.update_site(site_id, domain, robots_content, sitemap_content, ip_address, crawl_delay, last_accessed_time, disallow)
         print('bd domain updated')
         url = check_potential_url(domain)
-        db.write_url_to_frontier(1, url, site_id) # write domain to frontier
+        db.write_url_to_frontier(1, url, site_id, url) # write domain to frontier
         
     return domain, site_id, disallow
     
@@ -107,7 +106,7 @@ def get_robots_txt(domain_url):
 def get_robots_info(robots):
 
     sitemap = []
-    disallow = []
+    disallow = {}
     delay = 5 # Default value
     lines = str(robots).splitlines()
 

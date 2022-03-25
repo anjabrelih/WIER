@@ -15,7 +15,8 @@ from general import *
 # Edit parameters if needed
 web_driver_location = "C:/Users/anjab/Downloads/chromedriver_win32/chromedriver"
 user_agent = "user-agent=fri-ieps-OSKAR"
-timeout = 4
+timeout = 10
+headers = {'User-Agent': 'fri-ieps-OSKAR'}
 
 # Options (do not edit)
 chrome_options = Options()
@@ -26,7 +27,12 @@ driver = webdriver.Chrome(executable_path=web_driver_location, options=chrome_op
 
 
 # Crawl page
-def crawl_page(url, crawl_delay, site_id):
+def crawl_page(thread_name, url, crawl_delay, site_id):
+
+    global page_type_code
+    global page_type_code_raw
+
+    print(thread_name + ' crawling ' + url)
 
     if url.startswith('www'):
         url = 'http://'+url
@@ -35,8 +41,8 @@ def crawl_page(url, crawl_delay, site_id):
     #crawl_delay, site_id = db.get_crawl_delay_siteid(domain_name(url))
 
     try:
-        time.sleep(crawl_delay+1)
-        response = requests.head(url, allow_redirects=True, timeout=2)
+        #time.sleep(crawl_delay)
+        response = requests.head(url, allow_redirects=True, timeout=4, headers=headers)
         http_status_code = response.status_code
         page_type_code_raw = response.headers['content-type']
         page_type_code = get_content_type(page_type_code_raw)
@@ -45,27 +51,48 @@ def crawl_page(url, crawl_delay, site_id):
 
     except Exception as e:
         print("Request head failed :", e)
-
+        
         try:
 
-            time.sleep(crawl_delay+1)
-            response = requests.get(url, allow_redirects=True, timeout=4)
+            time.sleep(crawl_delay)
+            response = requests.get(url, allow_redirects=True, timeout=timeout, headers=headers)
             http_status_code = response.status_code
             page_type_code_raw = response.headers['content-type']
             page_type_code = get_content_type(page_type_code_raw)
             accessed_time = datetime.datetime.now() # with HTML we'll override it
             last_accessed_time = int(time.time()) # with HTML we'll override it
 
-        except:
+        except Exception as e:
+            print(e)
 
-            time.sleep(crawl_delay*2)
-            response = requests.get(url, allow_redirects=True, timeout=4)
-            http_status_code = response.status_code
-            page_type_code_raw = response.headers['content-type']
-            page_type_code = get_content_type(page_type_code_raw)
-            accessed_time = datetime.datetime.now() # with HTML we'll override it
-            last_accessed_time = int(time.time()) # with HTML we'll override it
-    
+            write_url = check_potential_url(url)
+            try:
+                http_status_code = response.status_code
+            except:
+                http_status_code = 0 # Hardcode - zbriši
+
+            try:
+                page_type_code_raw = response.headers['content-type']
+                page_type_code = get_content_type(page_type_code_raw)
+            except:
+                page_type_code = ''
+                page_type_code_raw = ''
+            
+            accessed_time = datetime.datetime.now()
+            hash = 0
+            last_accessed_time = int(time.time())
+            html_content = ''
+
+
+       # except:
+
+         ##  response = requests.get(url, allow_redirects=True, timeout=4)
+          #  http_status_code = response.status_code
+          #  page_type_code_raw = response.headers['content-type']
+          #  page_type_code = get_content_type(page_type_code_raw)
+          #  accessed_time = datetime.datetime.now() # with HTML we'll override it
+          #  last_accessed_time = int(time.time()) # with HTML we'll override it
+    print("PAGE TYPE CODE: ", page_type_code)
 
 
     # Content type HTML
@@ -84,41 +111,52 @@ def crawl_page(url, crawl_delay, site_id):
         # Update page in database
         write_url = check_potential_url(url)
         db.update_page(site_id, page_type_code, write_url, html_content, http_status_code, accessed_time, hash, last_accessed_time)
+        print("should be in db: ", write_url)
 
         # get URLs and site_ids from page
         new_urls, site_ids, number = get_urls(driver)
 
         try: 
-            write_url_to_frontier(number, new_urls, site_ids)
+            write_url_to_frontier(number, new_urls, site_ids, write_url)
         except:
             print('ERROR getting urls to db')
     
 
-        try:
+       # try:
             # IMAGES
-            for link in driver.find_elements_by_tag_name("img"):
-                image_links = []
-                l = link.get_attribute('src')
-                if 'gov.si' in l:
-                    image_links.append(l)
+         #   image_links = []
+          #  for link in driver.find_elements_by_tag_name("img"):
+          #      l = link.get_attribute('src')
+          #      if 'gov.si' in l:
+           #         image_links.append(l)
                     
-            new_urls, site_ids, number = clean_urls(image_links)
-            write_url = check_potential_url(new_urls)
+          #  new_urls, site_ids, number = clean_urls(image_links)
+          #  write_url = check_potential_url(new_urls)
 
 
-            accessed_time = datetime.datetime.now()
-            page_type_code = 'BINARY'
-            content_type = 'image'
+          #  accessed_time = datetime.datetime.now()
+           # page_type_code = 'BINARY'
+          #  content_type = 'image'
 
-            db.write_img(number, write_url, site_ids, page_type_code, content_type, accessed_time)
-        except:
-            pass
+          #  db.write_img(number, write_url, site_ids, page_type_code, content_type, accessed_time)
+       # except:
+           # pass
 
         # BINARY page_data
         # Types: https://www.iana.org/assignments/media-types/media-types.xhtml
-        else:
-            if 'application/pdf' in page_type_code_raw:
-                page_data_type = 'PDF'
+        # https://developer.mozilla.org/en-US/docs/Web/HTTP/Basics_of_HTTP/MIME_types/Common_types
+    elif page_type_code == 'BINARY':
+        if 'application/pdf' in page_type_code_raw:
+            page_data_type = 'PDF'
+            print(page_data_type)
+            print(page_type_code)
+            try:
+
+                write_url = check_potential_url(url)
+                if write_url != -1:
+                    db.write_data(page_type_code, write_url, http_status_code, accessed_time, last_accessed_time, page_data_type)
+            except:
+                pass
                 ## page.id
                 ## site_id
                 # page_type_code
@@ -128,26 +166,73 @@ def crawl_page(url, crawl_delay, site_id):
                 # accessed_time
                 # last_accessed_time
 
-            if 'application/msword' in page_type_code_raw:
-                page_data_type = 'DOC'
+        if 'application/msword' in page_type_code_raw:
+            page_data_type = 'DOC'
+            print(page_data_type)
+            print(page_type_code)
+            try:
 
-            if 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' in page_type_code_raw:
-                page_data_type = 'DOCX'
+                write_url = check_potential_url(url)
+                if write_url != -1:
+                    db.write_data(page_type_code, write_url, http_status_code, accessed_time, last_accessed_time, page_data_type)
+            except:
+                pass
+
+        if 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' or 'application/octet-stream' in page_type_code_raw:
+            page_data_type = 'DOCX'
+            print(page_data_type)
+            print(page_type_code)
+            try:
+
+                write_url = check_potential_url(url)
+                if write_url != -1:
+                    db.write_data(page_type_code, write_url, http_status_code, accessed_time, last_accessed_time, page_data_type)
+            except:
+                pass
 
 
-            if 'application/vnd.ms-powerpoint' in page_type_code_raw:
-                page_data_type = 'PPT'
+        if 'application/vnd.ms-powerpoint' in page_type_code_raw:
+            page_data_type = 'PPT'
+            print(page_data_type)
+            print(page_type_code)
+            try:
 
-            if 'application/vnd.openxmlformats-officedocument.presentationml.presentation' in page_type_code_raw:
-                page_data_type = 'PPTX'
+                write_url = check_potential_url(url)
+                if write_url != -1:
+                    db.write_data(page_type_code, write_url, http_status_code, accessed_time, last_accessed_time, page_data_type)
+            except:
+                pass
+
+        if 'application/vnd.openxmlformats-officedocument.presentationml.presentation' in page_type_code_raw:
+            page_data_type = 'PPTX'
+            print(page_data_type)
+            print(page_type_code)
 
             try:
 
                 write_url = check_potential_url(url)
-                db.write_data(page_type_code, write_url, http_status_code, accessed_time, last_accessed_time, page_data_type)
+                if write_url != -1:
+                    db.write_data(page_type_code, write_url, http_status_code, accessed_time, last_accessed_time, page_data_type)
             except:
                 pass
             
+        if 'image' in page_type_code_raw:
+            content_type = 'image'
+            print(page_type_code)
+            print(content_type)
+
+            try:
+                write_url = check_potential_url(url)
+                if write_url != -1:
+                    db.write_img(write_url, site_id, page_type_code, content_type, accessed_time, last_accessed_time)
+            except:
+                pass
+
+
+    elif page_type_code == '':
+        write_url = check_potential_url(url)
+        db.update_page(site_id, page_type_code, write_url, html_content, http_status_code, accessed_time, hash, last_accessed_time)
+
 
 
 def get_urls(driver):
@@ -156,11 +241,13 @@ def get_urls(driver):
     links_h = driver.find_elements_by_tag_name("a")
     links_b = driver.find_elements_by_xpath("//button[@onclick]")
     links_s = driver.find_elements_by_xpath("//script")
+    links_i=  driver.find_elements_by_tag_name("img")
+        
 
     for link in links_h:
         try:
             l = link.get_attribute('href')
-            if '.gov.si' in l:
+            if '.gov.si' in domain_name(l): # Added domain_name so we don't get other (not gov.si) pages contining gov.si
                 possible_urls.append(l)
         except:
             pass
@@ -168,7 +255,7 @@ def get_urls(driver):
     for link in links_b:
         try:
             l = link.get_attribute('onclick')
-            if '.gov.si' in l:
+            if '.gov.si' in domain_name(l):
                 possible_urls.append(l)
         except:
             pass
@@ -176,7 +263,15 @@ def get_urls(driver):
     for link in links_s:
         try:
             l = link.get_attribute("innerText")
-            if '.gov.si' in l:
+            if '.gov.si' in domain_name(l):
+                possible_urls.append(l)
+        except:
+            pass
+
+    for link in links_i:
+        try:
+            l = link.get_attribute('src')
+            if 'gov.si' in domain_name(l):
                 possible_urls.append(l)
         except:
             pass
@@ -215,6 +310,9 @@ def clean_urls(possible_urls):
 
         
         validated_url = check_potential_url(url)
+
+        if validated_url.endswith(".zip"): # We dont handle zip files
+            validated_url = -1
 
         if validated_url == -1:
             continue
