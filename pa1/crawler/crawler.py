@@ -48,6 +48,7 @@ def crawl_page(thread_name, url, crawl_delay, site_id):
         page_type_code_raw = response.headers['content-type']
         page_type_code = get_content_type(page_type_code_raw)
         last_accessed_time = int(time.time())
+        accessed_time = datetime.datetime.now()
         print("craw_page request.head successful", page_type_code)
         db.update_last_accessed_time(site_id, last_accessed_time)
 
@@ -62,6 +63,7 @@ def crawl_page(thread_name, url, crawl_delay, site_id):
             page_type_code_raw = response.headers['content-type']
             page_type_code = get_content_type(page_type_code_raw)
             last_accessed_time = int(time.time())
+            accessed_time = datetime.datetime.now()
             print("craw_page request.get successful", page_type_code)
             db.update_last_accessed_time(site_id, last_accessed_time)
 
@@ -70,6 +72,7 @@ def crawl_page(thread_name, url, crawl_delay, site_id):
             print(e)
             print("crawl_page request failed)")
             last_accessed_time = int(time.time())
+            accessed_time = datetime.datetime.now()
             page_type_code_raw = ''
             page_type_code = ''
             db.update_last_accessed_time(site_id, last_accessed_time)

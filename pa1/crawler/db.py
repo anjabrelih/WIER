@@ -370,7 +370,7 @@ def update_site(siteid, domain, robots_content, sitemap_content, ip_address, cra
                 cur.close()
 
             except (Exception, psycopg2.DatabaseError) as error:
-                print("Failed to update site: ", error)
+                print("Failed to UPDATE SITE", error)
 
             finally:
                 if conn is not None:
@@ -404,12 +404,12 @@ def write_url_to_frontier(number, links, site_ids, start_url):
                 if index == -1:
                     try:
                         # Add new url to frontier
-                        sql1 = 'INSERT INTO crawldb.page (url, site_id, page_type_code) VALUES (%s, %s, %s);'
-                        cur.execute(sql1, (links[0], site_ids[0], tag,))
+                        sql1 = 'INSERT INTO crawldb.page (url, site_id, page_type_code) VALUES (%s, %s, %s);' ## ZAJEB
+                        cur.execute(sql1, (links, site_ids, tag,))
 
                         # Get page id
                         sql2 = 'SELECT id FROM crawldb.page WHERE url = %s;'
-                        cur.execute(sql2, (links[0],))
+                        cur.execute(sql2, (links,))
                         index = cur.fetchone()[0]
                         print("New frontier at ID:", index)
 
