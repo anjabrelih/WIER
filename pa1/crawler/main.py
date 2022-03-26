@@ -9,23 +9,22 @@ from queue import Queue
 
 # Set seeds for web crawler
 seeds = ['https://www.gov.si','http://evem.gov.si', 'https://e-uprava.gov.si', 'https://www.e-prostor.gov.si']
+
 # Set number of threads for web crawler
 number_of_threads = 3
 queue = Queue()
 
 # When initializing
 # Get frontier
-frontier_size = get_frontier_size()
+def start_procedure():
+    frontier_size = get_frontier_size()
 
-if frontier_size == 0:
+    if frontier_size == 0:
 
-    for link in seeds:
-        domain, site_id, disallow = general.domain_name_new(link)
-        url = general.check_potential_url(link)
-        #write_url_to_frontier(1, url, site_id, url) # linking self in link_tree bc it's new domain
-        print('Seed in frontier: ',link)
-
-        #frontier_size = get_frontier_size()
+        for link in seeds:
+            domain, site_id, disallow = general.domain_name_new(link)
+            #url = general.check_potential_url(link)
+            print('Seed in frontier: ',link)
 
 
 
@@ -69,26 +68,10 @@ def work():
 # Each FRONTIER link is a new job
 def create_jobs():
     crawl_delay = 5
-    url, site_id, crawl_delay, last_accessed_time = get_url_from_frontier()
 
-    #try:
-    #    time_passed = int(int(time.time()) - last_accessed_time)
-    #except:
-    #    time_passed = int(1)
-
-    #if isinstance(crawl_delay, int):
-    #    pass
-    #else:
-    #    crawl_delay = 5
-
-    #if time_passed >= crawl_delay:
-     #   queue.put(url)
-        #queue.join()
-    #    crawl(1)
-   # else:
-      #  new_url, new_site_id, crawl_delay, last_accessed_time = get_new_url(site_id, url)
+    # popravi da kliče rl v crawl_page
+    url, site_id, crawl_delay, last_accessed_time = get_url_from_frontier() # Daj klic get url v crawl_page. V queue lohk daš sam frontir size?
     queue.put(url)
-        #queue.join()
     crawl()
 
 
@@ -101,14 +84,10 @@ def crawl():
     print(frontier_size)
     if frontier_size > 0:
         create_jobs()
-        frontier_size = frontier_size -1
         print("TO DO: ", frontier_size)
-    #else:
-       # if flag == 0:
-        #    start_procedure()
-       # else:
-            #frontier_size = get_frontier_size()
 
+
+start_procedure()
 create_threads()
 crawl()
 

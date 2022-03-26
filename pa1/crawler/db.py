@@ -7,6 +7,29 @@ from general import *
 # Set threading lock for database
 lock = threading.Lock()
 
+# Update last accessed time
+def update_last_accessed_time(site_id, last_accessed_time):
+    with lock:
+        try:
+            conn = psycopg2.connect(host="localhost", user="crawler", password="SecretPassword")
+            conn.autocommit = True
+
+            cur =conn.cursor()
+
+            # Update
+            sql2 = "UPDATE crawldb.site SET last_accessed_time = %s WHERE id = %s;"
+            cur.execute(sql2, (site_id,last_accessed_time,))
+            print("Updated LAT fro UNACCESSED site")
+            
+            cur.close()
+        
+        except Exception as error:
+            print("Error geting crawl delay: ", error)
+
+        finally:
+            if conn is not None:
+                conn.close()
+
 # Get crawl delay and site id
 def get_crawl_delay_siteid(domain):
     with lock:

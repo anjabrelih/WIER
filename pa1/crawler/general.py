@@ -70,7 +70,7 @@ def domain_name_new(url):
         db.update_site(site_id, domain, robots_content, sitemap_content, ip_address, crawl_delay, last_accessed_time, disallow)
         print('bd domain updated')
         url = check_potential_url(domain)
-        db.write_url_to_frontier(1, url, site_id, url) # write domain to frontier
+        db.write_url_to_frontier(1, url, site_id, url) # write domain to frontier # 1 for link_tree
         
     return domain, site_id, disallow
     
