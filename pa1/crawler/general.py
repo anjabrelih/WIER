@@ -56,17 +56,18 @@ def domain_name_new(url):
     site_id, flag, disallow = db.write_domain_to_site(domain)
 
     # new domain
-    if flag == -1 and site_id != -1:
+    if flag == -1:
         try:
             robots_content, sitemap_content, disallow, crawl_delay, last_accessed_time = get_robots_txt(domain)
+            ip_address = get_ip_address(domain)
         except:
             robots_content = ''
             sitemap_content = ''
             disallow = {}
             crawl_delay = 5
             last_accessed_time = int(time.time())
+            ip_address = ''
 
-        ip_address = get_ip_address(domain)
         db.update_site(site_id, domain, robots_content, sitemap_content, ip_address, crawl_delay, last_accessed_time, disallow)
         print('bd domain updated')
         url = check_potential_url(domain)
@@ -149,19 +150,18 @@ def check_potential_url(url):
     try:
         url = url_canonical(url)
         validated = validators.url(url)
-        if validated.startswith("https://"):
-            validated = validated[8:]
-        if validated.startswith("http://"):
-            validated = validated[7:]
+       # if validated.startswith("https://"):
+        #    validated = validated[8:]
+       # if validated.startswith("http://"):
+       #     validated = validated[7:]
         if validated.endswith("/"):
             validated = validated[:-1]
-        if validated.startswith("www"):
-            pass
-        else:
-            validated = "www."+validated
+       # if validated.startswith("www"):
+     #       pass
+      #  else:
+         #   validated = "www."+validated
 
     except:
         validated = -1
 
     return validated
-

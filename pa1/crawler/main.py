@@ -40,9 +40,7 @@ def create_threads():
 def work():
     while True:
         url = queue.get()
-       # crawl_delay = 5
-
-
+ 
         crawl_delay, siteid, last_accessed_time = get_job_info(url)
 
         try:
@@ -66,25 +64,32 @@ def work():
 
 
 # Each FRONTIER link is a new job
-def create_jobs():
-    crawl_delay = 5
-
-    # popravi da kliče rl v crawl_page
-    url, site_id, crawl_delay, last_accessed_time = get_url_from_frontier() # Daj klic get url v crawl_page. V queue lohk daš sam frontir size?
-    queue.put(url)
+def create_jobs(test):
+    while test > 0:
+        url = get_url_from_frontier()
+        queue.put(url)
+        test = test - 1
+    time.sleep(75)    
     crawl()
 
 
 
 # Check if there are items in queue, if so then crawl
 def crawl():
-    #global frontier_size
-   # if flag == 0:
+    test = 1
     frontier_size = get_frontier_size()
-    print(frontier_size)
-    if frontier_size > 0:
-        create_jobs()
+    print("GETTING frontier size: ",frontier_size)
+    if frontier_size > 0 and frontier_size >= 50:
+        test = 50
+    elif frontier_size > 0 and frontier_size < 50:
+        test = frontier_size
+    else:
+        test = 0
+
+    while test > 0:    
+        create_jobs(test)
         print("TO DO: ", frontier_size)
+        test = test - 1
 
 
 start_procedure()

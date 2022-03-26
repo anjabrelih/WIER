@@ -31,6 +31,8 @@ def crawl_page(thread_name, url, crawl_delay, site_id):
 
     #global page_type_code
     global page_type_code_raw
+    page_type_code_raw = ''
+    page_type_code = ''
 
     print(thread_name + ' crawling ' + url)
 
@@ -45,7 +47,9 @@ def crawl_page(thread_name, url, crawl_delay, site_id):
         http_status_code = response.status_code
         page_type_code_raw = response.headers['content-type']
         page_type_code = get_content_type(page_type_code_raw)
+        last_accessed_time = int(time.time())
         print("craw_page request.head successful", page_type_code)
+        db.update_last_accessed_time(site_id, last_accessed_time)
 
     except Exception as e:
         print("Request head failed :", e)
@@ -57,7 +61,9 @@ def crawl_page(thread_name, url, crawl_delay, site_id):
             http_status_code = response.status_code
             page_type_code_raw = response.headers['content-type']
             page_type_code = get_content_type(page_type_code_raw)
+            last_accessed_time = int(time.time())
             print("craw_page request.get successful", page_type_code)
+            db.update_last_accessed_time(site_id, last_accessed_time)
 
 
         except Exception as e:
@@ -110,27 +116,6 @@ def crawl_page(thread_name, url, crawl_delay, site_id):
         if number >= 1: 
             write_url_to_frontier(number, new_urls, site_ids, url)
         
-    
-
-       # try:
-            # IMAGES
-         #   image_links = []
-          #  for link in driver.find_elements_by_tag_name("img"):
-          #      l = link.get_attribute('src')
-          #      if 'gov.si' in l:
-           #         image_links.append(l)
-                    
-          #  new_urls, site_ids, number = clean_urls(image_links)
-          #  write_url = check_potential_url(new_urls)
-
-
-          #  accessed_time = datetime.datetime.now()
-           # page_type_code = 'BINARY'
-          #  content_type = 'image'
-
-          #  db.write_img(number, write_url, site_ids, page_type_code, content_type, accessed_time)
-       # except:
-           # pass
 
         # BINARY page_data
         # Types: https://www.iana.org/assignments/media-types/media-types.xhtml
@@ -142,7 +127,7 @@ def crawl_page(thread_name, url, crawl_delay, site_id):
             print(page_data_type)
             print(page_type_code)
             
-            db.write_data(page_type_code, url, http_status_code, accessed_time, last_accessed_time, page_data_type)
+            db.write_data(page_type_code, url, http_status_code, accessed_time, page_data_type)
 
 
         if 'application/msword' in page_type_code_raw:
@@ -150,7 +135,7 @@ def crawl_page(thread_name, url, crawl_delay, site_id):
             print(page_data_type)
             print(page_type_code)
 
-            db.write_data(page_type_code, url, http_status_code, accessed_time, last_accessed_time, page_data_type)
+            db.write_data(page_type_code, url, http_status_code, accessed_time, page_data_type)
 
 
         if 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' or 'application/octet-stream' in page_type_code_raw:
@@ -158,7 +143,7 @@ def crawl_page(thread_name, url, crawl_delay, site_id):
             print(page_data_type)
             print(page_type_code)
 
-            db.write_data(page_type_code, url, http_status_code, accessed_time, last_accessed_time, page_data_type)
+            db.write_data(page_type_code, url, http_status_code, accessed_time, page_data_type)
 
 
         if 'application/vnd.ms-powerpoint' in page_type_code_raw:
@@ -166,7 +151,7 @@ def crawl_page(thread_name, url, crawl_delay, site_id):
             print(page_data_type)
             print(page_type_code)
 
-            db.write_data(page_type_code, url, http_status_code, accessed_time, last_accessed_time, page_data_type)
+            db.write_data(page_type_code, url, http_status_code, accessed_time, page_data_type)
 
 
         if 'application/vnd.openxmlformats-officedocument.presentationml.presentation' in page_type_code_raw:
@@ -174,7 +159,7 @@ def crawl_page(thread_name, url, crawl_delay, site_id):
             print(page_data_type)
             print(page_type_code)
 
-            db.write_data(page_type_code, url, http_status_code, accessed_time, last_accessed_time, page_data_type)
+            db.write_data(page_type_code, url, http_status_code, accessed_time, page_data_type)
 
             
         if 'image' in page_type_code_raw:
@@ -182,8 +167,7 @@ def crawl_page(thread_name, url, crawl_delay, site_id):
             print(page_type_code)
             print(content_type)
 
-            db.write_img(url, site_id, page_type_code, content_type, accessed_time, last_accessed_time)
-
+            db.write_img(url, site_id, page_type_code, content_type, accessed_time)
 
 
 
