@@ -95,7 +95,7 @@ def get_frontier_size():
 
             cur =conn.cursor()
             
-            sql = "SELECT COUNT ( * ) FROM crawldb.page WHERE page_type_code IS NULL;" #'FRONTIER';"
+            sql = "SELECT COUNT ( * ) FROM crawldb.page WHERE page_type_code IS NULL;"#= 'FRONTIER';"
             cur.execute(sql, )
             frontier_size = cur.fetchone()[0]
             #print("Frontier size: ", frontier_size)
@@ -123,10 +123,21 @@ def get_url_from_frontier():
             cur =conn.cursor()
 
             # Get urls from frontier
-            sql = "SELECT url FROM crawldb.page WHERE page_type_code IS NULL ORDER BY id ASC LIMIT 1"
+            sql = "SELECT url FROM crawldb.page WHERE page_type_code IS NULL ORDER BY id ASC LIMIT 1" ## FRONTIER
             cur.execute(sql, )
             if cur.rowcount != 0:
                 url = cur.fetchone()[0]
+
+
+            # Get site id
+            sql1 = "SELECT id FROM crawldb.page WHERE url = %s"
+            cur.execute(sql1, (url,))
+            page_id = cur.fetchone()[0]
+
+            # BECAUSE; WE?RE GOING TROUGH MORE TIMES NOW:::
+            sql2 = "UPDATE crawldb.page SET page_hash = NULL WHERE url = %s;"
+            cur.execute(sql2, (url,))
+            print("set page hash to null")
 
             # Get site id
             sql1 = "SELECT site_id FROM crawldb.page WHERE url = %s"
@@ -454,7 +465,7 @@ def update_page(site_id, page_type_code, url, html_content, http_status_code, ac
                 tag_duplicate = 'DUPLICATE'
     
 
-                if html_content != '':
+                if html_content != 0:
 
                     # Check if hash exists in db
                     try:
@@ -540,7 +551,7 @@ def update_page(site_id, page_type_code, url, html_content, http_status_code, ac
                 else:
                     try:
                         # Update page that couldn't access
-                        sql1 = "UPDATE crawldb.page SET http_status_code = %s,accessed_time = %s WHERE url = %s RETURNING id;"
+                        sql1 = "UPDATE crawldb.page SET http_status_code = %s,accessed_time = %s, page_type_code = NULL WHERE url = %s RETURNING id;"
                         cur.execute(sql1, (http_status_code, accessed_time, url,))
                         if cur.rowcount != 0:
                             id = cur.fetchone()[0]
@@ -550,7 +561,7 @@ def update_page(site_id, page_type_code, url, html_content, http_status_code, ac
                         #sql3 = 'UPDATE crawldb.site SET last_accessed_time = %s WHERE id = %s;'
                         #cur.execute(sql3, (last_accessed_time, site_id,))
 
-                        print('Logged into page: ', url)
+                        print('Logged into UNACCESSED page: ', url)
                         #print('ID: ', id) #Popravi, ker ni -1
 
                     except Exception as e:

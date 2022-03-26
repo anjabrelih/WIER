@@ -15,7 +15,7 @@ from general import *
 # Edit parameters if needed
 web_driver_location = "C:/Users/anjab/Downloads/chromedriver_win32/chromedriver"
 user_agent = "user-agent=fri-ieps-OSKAR"
-timeout = 10
+timeout = 20
 headers = {'User-Agent': 'fri-ieps-OSKAR'}
 
 # Options (do not edit)
@@ -36,13 +36,13 @@ def crawl_page(thread_name, url, crawl_delay, site_id):
 
     if url.startswith('www'):
         url = 'http://'+url
-    else:
-        url = 'http://www.'
+    #else:
+        #url = 'http://www.'
     #crawl_delay, site_id = db.get_crawl_delay_siteid(domain_name(url))
 
     try:
         #time.sleep(crawl_delay)
-        response = requests.head(url, allow_redirects=True, timeout=4, headers=headers)
+        response = requests.head(url, allow_redirects=True, timeout=timeout, headers=headers)
         http_status_code = response.status_code
         page_type_code_raw = response.headers['content-type']
         page_type_code = get_content_type(page_type_code_raw)
@@ -81,7 +81,7 @@ def crawl_page(thread_name, url, crawl_delay, site_id):
             accessed_time = datetime.datetime.now()
             hash = 0
             last_accessed_time = int(time.time())
-            html_content = ''
+            html_content = 0
 
 
        # except:

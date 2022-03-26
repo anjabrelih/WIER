@@ -10,14 +10,14 @@ from queue import Queue
 # Set seeds for web crawler
 seeds = ['https://www.gov.si','http://evem.gov.si', 'https://e-uprava.gov.si', 'https://www.e-prostor.gov.si']
 # Set number of threads for web crawler
-number_of_threads = 5
+number_of_threads = 3
 queue = Queue()
 
 # When initializing
 # Get frontier
-#frontier_size = get_frontier_size()
+frontier_size = get_frontier_size()
 
-def start_procedure():
+if frontier_size == 0:
 
     for link in seeds:
         domain, site_id, disallow = general.domain_name_new(link)
@@ -25,8 +25,8 @@ def start_procedure():
         #write_url_to_frontier(1, url, site_id, url) # linking self in link_tree bc it's new domain
         print('Seed in frontier: ',link)
 
-        frontier_size = get_frontier_size()
-    crawl(1)
+        #frontier_size = get_frontier_size()
+
 
 
 #
@@ -89,12 +89,12 @@ def create_jobs():
       #  new_url, new_site_id, crawl_delay, last_accessed_time = get_new_url(site_id, url)
     queue.put(url)
         #queue.join()
-    crawl(1)
+    crawl()
 
 
 
 # Check if there are items in queue, if so then crawl
-def crawl(flag):
+def crawl():
     #global frontier_size
    # if flag == 0:
     frontier_size = get_frontier_size()
@@ -103,14 +103,14 @@ def crawl(flag):
         create_jobs()
         frontier_size = frontier_size -1
         print("TO DO: ", frontier_size)
-    else:
-        if flag == 0:
-            start_procedure()
-        else:
-            frontier_size = get_frontier_size()
+    #else:
+       # if flag == 0:
+        #    start_procedure()
+       # else:
+            #frontier_size = get_frontier_size()
 
 create_threads()
-crawl(0)
+crawl()
 
 queue.join()
 
