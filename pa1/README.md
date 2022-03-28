@@ -52,5 +52,5 @@ python main.py
 ```
 
 ## Archive:
-- in crawler/old is the old version of web-crawler implementation.
+- in crawler/old folder is the old version of web-crawler implementation.
 
