@@ -1,15 +1,16 @@
 import hashlib
 import socket
 from urllib.parse import urlparse
+from attr import validate
 from url_normalize import url_normalize
 import urllib.request
 import io
 from validator_collection import validators
-import db
+from zmq import NULL
+import old_db
 import time
-import requests
 
-# Not used (we hash before we check db)
+
 # Hash HTML content
 def html_hash(html):
     hashed_html = hashlib.md5((html).encode()).hexdigest()
@@ -17,7 +18,7 @@ def html_hash(html):
     return hashed_html
 
 
-# Correct url (before canonicalization!)
+# Correct url (before canonicalization!) (output)
 def correct_url(url):
     if not url.startswith("http://") and not url.startswith("https://"):
         url = "http://" + url
@@ -34,6 +35,7 @@ def url_canonical(url):
     return url_can_norm
 
 
+# We dont need this
 # Get (sub)domain name (output example: www.gov.si)
 def domain_name(url):
     domain = urlparse(url).netloc
@@ -41,8 +43,8 @@ def domain_name(url):
     return domain
 
 
-# Get (sub)domain name (output example: www.gov.si) when getting links from page we check domain
-def domain_name_new(url):
+# Get (sub)domain name (output example: www.gov.si) when getting links from page
+def domain_name_new(url, conn):
     url = correct_url(url)
     domain = urlparse(url).netloc
 
@@ -51,28 +53,27 @@ def domain_name_new(url):
     else:
         domain = "www."+domain
 
-    site_id, flag, robots_content = db.write_domain_to_site(domain)
+    site_id, flag, disallow = db.write_domain_to_site(domain, conn)
 
-    # process new domain info
+    # new domain
     if flag == -1:
-        robots_content = ''
-        sitemap_content = ''
-        disallow = None
-        crawl_delay = 5
-        last_accessed_time = int(time.time())
-        ip_address = get_ip_address(domain)
         try:
             robots_content, sitemap_content, disallow, crawl_delay, last_accessed_time = get_robots_txt(domain)
+            ip_address = get_ip_address(domain)
         except:
-            pass
-            
+            robots_content = ''
+            sitemap_content = ''
+            disallow = {}
+            crawl_delay = 5
+            last_accessed_time = int(time.time())
+            ip_address = ''
 
-        db.update_site(site_id, domain, robots_content, sitemap_content, ip_address, crawl_delay, last_accessed_time)
+        db.update_site(site_id, domain, robots_content, sitemap_content, ip_address, crawl_delay, last_accessed_time, disallow, conn)
         print('bd domain updated')
         url = check_potential_url(domain)
-        db.write_url_to_frontier(1, url, site_id, url) # write new domain to frontier as well
+        db.write_url_to_frontier(1, url, site_id, url, conn) # write domain to frontier # 1 for link_tree
         
-    return domain, site_id, robots_content
+    return domain, site_id, disallow
     
 
 
@@ -81,7 +82,8 @@ def get_ip_address(url):
     try:
         return socket.gethostbyname(url)
     except:
-        return None
+        return ''
+
 
 
 # Get robots.txt content
@@ -104,14 +106,13 @@ def get_robots_txt(domain_url):
 # Get robots.txt relavant information
 def get_robots_info(robots):
 
-    sitemap_links = []
     sitemap = []
-    disallow = []
+    disallow = {}
     delay = 5 # Default value
     lines = str(robots).splitlines()
 
     for line in lines:
-        # Sitemap (check for links and get content)
+        # Sitemap
         if 'sitemap:' in line.lower(): # line.lower ot avoid upper/lower case problem
             split = line.split(': ')
             print(split)
@@ -119,19 +120,12 @@ def get_robots_info(robots):
             for possible_link in split: 
                 try:
                     value = validators.url(possible_link)
-                    sitemap_links.append(value)
-                    print(sitemap_links)
+                    sitemap.append(value)
+                    print(sitemap)
                 except:
                     pass
-
-            try:
-                for site in sitemap_links:
-                    sitemap_content = requests.get(site, timeout=10).text
-                    sitemap.append(sitemap_content)
-            except:
-                pass
-            
-        # Disallow (we dont log it to db - could delete it here, we check robots_content when parsing)
+        
+        # Disallow
         if 'disallow:' in line.lower():
             disallow.append(line.split(': ')[1].split(' ')[0])
 
@@ -156,13 +150,17 @@ def get_content_type(response):
 def check_potential_url(url):
     try:
         url = url_canonical(url)
-
-        # Checks if it's actually URL
         validated = validators.url(url)
-
-        # Uniform ending for all urls
+       # if validated.startswith("https://"):
+        #    validated = validated[8:]
+       # if validated.startswith("http://"):
+       #     validated = validated[7:]
         if validated.endswith("/"):
             validated = validated[:-1]
+       # if validated.startswith("www"):
+     #       pass
+      #  else:
+         #   validated = "www."+validated
 
     except:
         validated = -1

@@ -1,1 +1,7 @@
+Old DB with aprox. 23k urls where we ran out of new url due to inappropriate parcing
+Uploaded on Friday, 25.3.2022
 https://drive.google.com/file/d/1nSGG232een1wp8JSiuX6o0hQhrX8hdhH/view?usp=sharing
+
+New DB with aprox. 50k urls total (frontier and processed urls) - started running on Saturday, 26.3.2022
+Uploaded on Monday, 28.3.2022
+https://drive.google.com/file/d/1B30ApyRrDcPnFQ38IXTLQ8jGnAgcQNiE/view?usp=sharing
