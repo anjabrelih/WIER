@@ -10,6 +10,9 @@ hashlib
 psycopg2
 selenium
 validator_collection
+socket
+url_normalize
+urllib
 ```
 
 
