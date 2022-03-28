@@ -39,7 +39,7 @@ docker exec -it postgresql-wier-crawler psql -U crawler
 
 ## Instructions:
 
-- in crawler/crawler.py web_driver_location to your path
+- in crawler/thread.py web_driver_location to your path
 - in crawler/main.py set number_of_threads to desired number of threads
 
 Run code:
