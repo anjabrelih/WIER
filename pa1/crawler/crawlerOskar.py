@@ -126,13 +126,13 @@ class Crawler:
             id = db.update_page(site_id, page_type_code, url, html_content, http_status_code, accessed_time, last_accessed_time)
             print(self.INSTANCE, " Page updated in db: ", url)
 
-###### UNCOMMENT!!!!!
-            # get new URLs and site_ids from page
-            #new_urls, site_ids, number = self.get_urls(self.DRIVER)
 
-            #if number >= 1: 
-            #    write_url_to_frontier(number, new_urls, site_ids, url)
-            #return
+            # get new URLs and site_ids from page
+            new_urls, site_ids, number = self.get_urls(self.DRIVER)
+
+            if number >= 1: 
+                write_url_to_frontier(number, new_urls, site_ids, url)
+            
         
 
         # BINARY page_data
