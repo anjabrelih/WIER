@@ -5,7 +5,7 @@ from thread import CrawlerThread
 
 
 # Set seeds for web crawler
-seeds = ['https://www.gov.si','http://evem.gov.si', 'https://e-uprava.gov.si', 'https://www.e-prostor.gov.si']
+seeds = ['https://www.gov.si','http://evem.gov.si', 'https://e-uprava.gov.si/', 'https://www.e-prostor.gov.si']
 
 # Set number of threads for web crawler
 number_of_threads = 4

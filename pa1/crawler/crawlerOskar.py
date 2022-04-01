@@ -34,9 +34,17 @@ class Crawler:
 
 
         # Get job info
-        crawl_delay, site_id, last_accessed_time = get_job_info(url)
+        crawl_delay, site_id, last_accessed_time, lock = get_job_info(url) #tukej moreš zaklenit domeno (urlje brez problema podeliš)
         page_type_code_raw = ''
         page_type_code = ''
+
+        # lock: 0 - unlocked; 1 - locked
+
+        while lock == 1:
+            print('WAITING TO UNLOCK')
+            time.sleep(3)
+            crawl_delay, site_id, last_accessed_time, lock = get_job_info(url)
+            
 
 
         # Check last accessed time and crawl delay - if needed sleep
@@ -45,6 +53,7 @@ class Crawler:
         except:
             time_passed = int(1)
 
+        # Check is if crawl_delay is int in case there is a problem in db and crawl_delay isnt logged
         if isinstance(crawl_delay, int):
             pass
         else:
@@ -52,6 +61,29 @@ class Crawler:
 
         if time_passed < crawl_delay:
             time.sleep(crawl_delay-time_passed)
+        
+        #wait_circle = 0
+
+        #while time_passed < crawl_delay:
+            #time.sleep(crawl_delay-time_passed)
+            #crawl_delay, site_id, last_accessed_time = get_job_info(url)
+            #print("WAITING ...")
+            ##wait_circle = wait_circle + 1
+           # print(wait_circle)
+           # try:
+           #     time_passed = int(int(time.time()) - last_accessed_time)
+            #except:
+           #     time_passed = int(1)
+
+           # if isinstance(crawl_delay, int):
+           #     pass
+           # else:
+           #     crawl_delay = 5
+
+           # if wait_circle > 3:
+           #     break
+
+
             
 
         # In case url doesnt start with protocol
@@ -62,16 +94,21 @@ class Crawler:
  
         try:
             #time.sleep(crawl_delay)
-            last_accessed_time = int(time.time())
-            db.update_last_accessed_time(site_id, last_accessed_time)
+            #last_accessed_time = int(time.time())
+            #db.update_last_accessed_time(site_id, last_accessed_time)
             response = requests.head(url_req, allow_redirects=True, timeout=self.TIMEOUT, headers=self.HEADERS, verify=False) #verify false to disable SSL cert. error
             http_status_code = response.status_code
             page_type_code_raw = response.headers['content-type']
             page_type_code = get_content_type(page_type_code_raw)
             last_accessed_time = int(time.time())
             accessed_time = datetime.datetime.now()
-            db.update_last_accessed_time(site_id, last_accessed_time)
             print("craw_page request.head successful", page_type_code)
+            if page_type_code == 'HTML':
+                lock = 1
+            else:
+                lock = 0
+            db.update_last_accessed_time(site_id, last_accessed_time, lock)
+            print("LOCK/UNLOCK", lock) 
 
         except Exception as e:
             print("Request head failed :", e)
@@ -79,16 +116,22 @@ class Crawler:
             try:
                 # Retry requests after crawl delay
                 time.sleep(crawl_delay)
-                last_accessed_time = int(time.time())
-                db.update_last_accessed_time(site_id, last_accessed_time)
+                #last_accessed_time = int(time.time())
+                #db.update_last_accessed_time(site_id, last_accessed_time)
                 response = requests.get(url_req, allow_redirects=True, timeout=self.TIMEOUT, headers=self.HEADERS, verify=False)
                 http_status_code = response.status_code
                 page_type_code_raw = response.headers['content-type']
                 page_type_code = get_content_type(page_type_code_raw)
                 last_accessed_time = int(time.time())
                 accessed_time = datetime.datetime.now()
-                db.update_last_accessed_time(site_id, last_accessed_time)
+                #db.update_last_accessed_time(site_id, last_accessed_time)
                 print("craw_page request.head successful", page_type_code)
+                if page_type_code == 'HTML':
+                    lock = 1
+                else:
+                    lock = 0
+                db.update_last_accessed_time(site_id, last_accessed_time, lock)
+                print("LOCK/UNLOCK", lock) 
 
 
             except Exception as e:
@@ -98,10 +141,14 @@ class Crawler:
                 accessed_time = datetime.datetime.now()
                 page_type_code_raw = ''
                 page_type_code = ''
-                db.update_last_accessed_time(site_id, last_accessed_time)
+                lock = 0
+                db.update_last_accessed_time(site_id, last_accessed_time, lock)
+                print("LOCK/UNLOCK", lock) 
                 return
 
-        
+
+
+       
 
 
         print(page_type_code_raw, page_type_code)

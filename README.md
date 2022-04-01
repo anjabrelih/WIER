@@ -2,7 +2,7 @@
 
 Git repository for course Web Information Extraction and Retrieval at University of Ljubljana, Faculty of Computer and Information Science.
 
-**Members:** Brelih Anja, Knafelc Ana, Vidmar Eva
+**Member:** Brelih Anja
 
 
 ## Repository contains projects:

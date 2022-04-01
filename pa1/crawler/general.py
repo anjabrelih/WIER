@@ -57,12 +57,12 @@ def domain_name_new(url):
     if flag == -1:
         robots_content = ''
         sitemap_content = ''
-        disallow = None
+        #disallow = None
         crawl_delay = 5
         last_accessed_time = int(time.time())
         ip_address = get_ip_address(domain)
         try:
-            robots_content, sitemap_content, disallow, crawl_delay, last_accessed_time = get_robots_txt(domain)
+            robots_content, sitemap_content, crawl_delay, last_accessed_time = get_robots_txt(domain)
         except:
             pass
             
@@ -96,9 +96,9 @@ def get_robots_txt(domain_url):
 
     robots = data.read()
     last_accessed_time = int(time.time())    
-    sitemap, disallow, delay = get_robots_info(robots)
+    sitemap, delay = get_robots_info(robots)
 
-    return robots, sitemap, disallow, delay, last_accessed_time
+    return robots, sitemap, delay, last_accessed_time
 
 
 # Get robots.txt relavant information
@@ -106,7 +106,7 @@ def get_robots_info(robots):
 
     sitemap_links = []
     sitemap = []
-    disallow = []
+    #disallow = []
     delay = 5 # Default value
     lines = str(robots).splitlines()
 
@@ -132,15 +132,15 @@ def get_robots_info(robots):
                 pass
             
         # Disallow (we dont log it to db - could delete it here, we check robots_content when parsing)
-        if 'disallow:' in line.lower():
-            disallow.append(line.split(': ')[1].split(' ')[0])
+        #if 'disallow:' in line.lower():
+        #    disallow.append(line.split(': ')[1].split(' ')[0])
 
         # Crawl-delay
         if ('crawl-delay:' or 'crawl delay:' or 'crawl_delay:') in line.lower():
             split = line.split(': ')[1]
             delay = int(split)
      
-    return sitemap, disallow, delay
+    return sitemap, delay
 
 
 # Get content type
