@@ -65,8 +65,8 @@ def get_job_info(url):
                 last_accessed_time = cur.fetchone()[0]
 
             # Update last accessed time - to "lock" the domain
-            sql3 = 'UPDATE crawldb.site SET last_accessed_time = %s WHERE id = %s;'
-            cur.execute(sql3, (int(time.time()), site_id,))
+            #sql3 = 'UPDATE crawldb.site SET last_accessed_time = %s WHERE id = %s;'
+            #cur.execute(sql3, (int(time.time()), site_id,))
 
             # Get site lock
             sql4 = 'SELECT lock FROM crawldb.site WHERE id = %s;'
@@ -198,7 +198,8 @@ def get_url_from_frontier1():
         cur =conn.cursor()
         try:
             # Get urls from frontier
-            sql = "SELECT url FROM crawldb.page WHERE page_type_code = 'FRONTIER' ORDER BY id ASC LIMIT 1;"
+            #sql = "SELECT url FROM crawldb.page WHERE page_type_code = 'FRONTIER' ORDER BY id ASC LIMIT 1;"
+            sql = "SELECT url FROM crawldb.page INNER JOIN crawldb.site ON site.id = page.site_id WHERE page.page_type_code = 'FRONTIER' AND site.lock <> 1 ORDER BY page.id ASC LIMIT 1;"
             cur.execute(sql, )
             if cur.rowcount != 0:
                 url = cur.fetchone()[0]
@@ -225,75 +226,6 @@ def get_url_from_frontier1():
                 conn.close()
 
         return url
-
-### NOT USED in current version! ###
-# Get new url
-def get_new_url(old_site_id, old_url, old_crawl_delay, old_lat, conn):
-    with lock:
-        last_accessed_time = int(time.time())
-        crawl_delay = 5
-        global url
-        conn.autocommit = True
-
-        cur =conn.cursor()
-        
-        try:
-
-            # Get urls from frontier
-            sql = "SELECT url FROM crawldb.page WHERE (page_type_code = 'FRONTIER') AND site_id != %s ORDER BY id ASC LIMIT 1"
-            cur.execute(sql, (old_site_id,))
-            if cur.rowcount != 0:
-                url = cur.fetchone()[0]
-
-                # Get site id
-                sql1 = "SELECT site_id FROM crawldb.page WHERE url = %s"
-                cur.execute(sql1, (url,))
-                site_id = cur.fetchone()[0]
-
-
-                # Update page_type_code
-                sql2 = 'UPDATE crawldb.page SET page_type_code = NULL WHERE url = %s;'
-                cur.execute(sql2, (url,))
-
-                # Update page_type_code that DIDNT CRAWL
-                sql2 = "UPDATE crawldb.page SET page_type_code = 'FRONTIER' WHERE url = %s;"
-                cur.execute(sql2, (old_url,))
-
-                # Get crawl delay
-                sql3 = "SELECT crawl_delay FROM crawldb.site WHERE id = %s"
-                cur.execute(sql3, (site_id,))
-                crawl_delay = cur.fetchone()[0]
-                if isinstance(crawl_delay,int):
-                    crawl_delay = crawl_delay
-                else:
-                    crawl_delay = 5
-
-                # Get last access time
-                sql4 = "SELECT last_accessed_time FROM crawldb.site WHERE id = %s;"
-                cur.execute(sql4, (site_id,))
-                last_accessed_time = cur.fetchone()[0]
-                if isinstance(last_accessed_time,int):
-                    last_accessed_time = last_accessed_time
-                else:
-                    last_accessed_time = int(time.time()) - crawl_delay
-                
-
-            cur.close()
-        
-        except Exception as error:
-            print("Error geting NEW URL from frontier: ", error)
-            url = old_url
-            site_id = old_site_id
-            crawl_delay = old_crawl_delay
-            last_accessed_time = old_lat
-            conn.rollback()
-            cur.close()
-
-        finally:
-            if conn is not None:
-                conn.close()
-
-    return url, site_id, crawl_delay, last_accessed_time
 
 
 # Insert domain/check domain index
@@ -575,7 +507,7 @@ def update_page(site_id, page_type_code, url, html_content, http_status_code, ac
                 print("Couldnt update last accessed time in site")
                 conn.rollback()
 
-
+            # Unlock
             sql3 = "UPDATE crawldb.site SET lock = %s WHERE id = %s;"
             cur.execute(sql3, (0, site_id,))
             print("Site lock RELESED")
@@ -617,6 +549,11 @@ def update_page1(site_id, page_type_code, url, http_status_code, accessed_time, 
             sql3 = 'UPDATE crawldb.site SET last_accessed_time = %s WHERE id = %s;'
             cur.execute(sql3, (last_accessed_time, site_id,))
             print("UPDATED LAT")
+
+            # Unlock
+            sql3 = "UPDATE crawldb.site SET lock = %s WHERE id = %s;"
+            cur.execute(sql3, (0, site_id,))
+            print("Site lock RELESED")
 
                
             cur.close()

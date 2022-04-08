@@ -19,7 +19,7 @@ def html_hash(html):
 
 # Correct url (before canonicalization!)
 def correct_url(url):
-    if not url.startswith("http://") and not url.startswith("https://"):
+    if (not url.startswith("http://")) and (not url.startswith("https://")):
         url = "http://" + url
         
     return url

@@ -39,7 +39,6 @@ class Crawler:
         page_type_code = ''
 
         # lock: 0 - unlocked; 1 - locked
-
         while lock == 1:
             print('WAITING TO UNLOCK')
             time.sleep(3)
@@ -62,29 +61,7 @@ class Crawler:
         if time_passed < crawl_delay:
             time.sleep(crawl_delay-time_passed)
         
-        #wait_circle = 0
-
-        #while time_passed < crawl_delay:
-            #time.sleep(crawl_delay-time_passed)
-            #crawl_delay, site_id, last_accessed_time = get_job_info(url)
-            #print("WAITING ...")
-            ##wait_circle = wait_circle + 1
-           # print(wait_circle)
-           # try:
-           #     time_passed = int(int(time.time()) - last_accessed_time)
-            #except:
-           #     time_passed = int(1)
-
-           # if isinstance(crawl_delay, int):
-           #     pass
-           # else:
-           #     crawl_delay = 5
-
-           # if wait_circle > 3:
-           #     break
-
-
-            
+          
 
         # In case url doesnt start with protocol
         if url.startswith('www'):
@@ -93,9 +70,6 @@ class Crawler:
             url_req = url
  
         try:
-            #time.sleep(crawl_delay)
-            #last_accessed_time = int(time.time())
-            #db.update_last_accessed_time(site_id, last_accessed_time)
             response = requests.head(url_req, allow_redirects=True, timeout=self.TIMEOUT, headers=self.HEADERS, verify=False) #verify false to disable SSL cert. error
             http_status_code = response.status_code
             page_type_code_raw = response.headers['content-type']
@@ -114,10 +88,8 @@ class Crawler:
             print("Request head failed :", e)
         
             try:
-                # Retry requests after crawl delay
+                # Retry requests.get after crawl delay
                 time.sleep(crawl_delay)
-                #last_accessed_time = int(time.time())
-                #db.update_last_accessed_time(site_id, last_accessed_time)
                 response = requests.get(url_req, allow_redirects=True, timeout=self.TIMEOUT, headers=self.HEADERS, verify=False)
                 http_status_code = response.status_code
                 page_type_code_raw = response.headers['content-type']
@@ -155,31 +127,33 @@ class Crawler:
         # Content type HTML
         if page_type_code == 'HTML':
 
-            # Used in case getting page with selenium failes
-            id = db.update_page1(site_id, page_type_code, url, http_status_code, accessed_time, last_accessed_time)
-            print(self.INSTANCE, "HTML page updated in db: ", url)
+        
+            try:
+                time.sleep(crawl_delay)
+                self.DRIVER.get(url_req)
+                time.sleep(self.TIMEOUT) # waiting for page to load
 
-            time.sleep(crawl_delay)
-            self.DRIVER.get(url_req)
-            time.sleep(self.TIMEOUT) # waiting for page to load
+                html_content = self.DRIVER.page_source
 
-            html_content = self.DRIVER.page_source
+                accessed_time = datetime.datetime.now()
+                last_accessed_time = int(time.time())
+                #page.hashed_html =  hashlib.md5((page.html_content).encode()).hexdigest() # moved to db.update_page
 
-            accessed_time = datetime.datetime.now()
-            last_accessed_time = int(time.time())
-            #page.hashed_html =  hashlib.md5((page.html_content).encode()).hexdigest() # moved to db.update_page
-
-            # Update page in database
-            id = db.update_page(site_id, page_type_code, url, html_content, http_status_code, accessed_time, last_accessed_time)
-            print(self.INSTANCE, " Page updated in db: ", url)
+                # Update page in database
+                id = db.update_page(site_id, page_type_code, url, html_content, http_status_code, accessed_time, last_accessed_time)
+                print(self.INSTANCE, " Page updated in db: ", url)
 
 
-            # get new URLs and site_ids from page
-            new_urls, site_ids, number = self.get_urls(self.DRIVER)
+                # get new URLs and site_ids from page
+                new_urls, site_ids, number = self.get_urls(self.DRIVER)
 
-            if number >= 1: 
-                write_url_to_frontier(number, new_urls, site_ids, url)
-            
+                if number >= 1: 
+                    write_url_to_frontier(number, new_urls, site_ids, url)
+                
+            except:
+                # Used in case getting page with selenium failes
+                id = db.update_page1(site_id, page_type_code, url, http_status_code, accessed_time, last_accessed_time)
+                print(self.INSTANCE, "HTML page updated in db: ", url)
         
 
         # BINARY page_data
