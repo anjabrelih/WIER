@@ -131,9 +131,6 @@ def get_robots_info(robots):
             except:
                 pass
             
-        # Disallow (we dont log it to db - could delete it here, we check robots_content when parsing)
-        #if 'disallow:' in line.lower():
-        #    disallow.append(line.split(': ')[1].split(' ')[0])
 
         # Crawl-delay
         if ('crawl-delay:' or 'crawl delay:' or 'crawl_delay:') in line.lower():
