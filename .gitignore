@@ -1,7 +1,10 @@
+# pa1
 /pa1/__pycache__
 /pa1/crawler/__pycache__
 /pa1/db/pgdata
 /pa1/test_scripts
 /pa1/data
 /pa1/crawler/old
-/tests
+/pa1/tests
+
+# pa2
