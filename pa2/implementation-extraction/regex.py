@@ -1,5 +1,5 @@
 import re
-import codecs
+import json
 
 
 def regex_rtvslo(html_content):
@@ -49,7 +49,12 @@ def regex_rtvslo(html_content):
         "content": content
     }
 
-    print(output)
+    print(json.dumps(output, indent=3,separators=(',',':'), ensure_ascii=False))
+
+    # Store to json file
+    #out_file = open("../outputs/regex/rtvslo2.json", "w", encoding='utf8')
+    #json.dump(output, out_file, indent=3,separators=(', ', ' : '), sort_keys=False, ensure_ascii=False)
+    #out_file.close()
 
 def regex_overstock(html_content):
     # title, listPrice, price, saving, savingPercent, content
@@ -97,7 +102,7 @@ def regex_overstock(html_content):
     content_out = []
     for content in contents:
         content = ''.join(map(str,content))
-        content_out.append(content.replace("\n",""))    
+        content_out.append(content.replace("\n"," "))    
 
 
     # Group
@@ -113,7 +118,12 @@ def regex_overstock(html_content):
 
         output.append(item)
 
-    print(output)
+    print(json.dumps(output, indent=3,separators=(',',':'), ensure_ascii=False))
+
+    # Store to json file
+    #out_file = open("../outputs/regex/overstock2.json", "w", encoding='utf8')
+    #json.dump(output, out_file, indent=3,separators=(', ', ' : '), sort_keys=False, ensure_ascii=False)
+    #out_file.close()
 
 
 def regex_mimovrste(html_content):
@@ -147,22 +157,9 @@ def regex_mimovrste(html_content):
         "number": number[1]
     }
 
-    print(output)
+    print(json.dumps(output, indent=3,separators=(',',':'), ensure_ascii=False))
 
-
-# OUT ####################################################
-rtvslo1 = codecs.open("../input-extraction/rtvslo.si/Audi A6 50 TDI quattro_ nemir v premijskem razredu - RTVSLO.si.html", "r","utf-8").read()
-rtvslo2 = codecs.open("../input-extraction/rtvslo.si/Volvo XC 40 D4 AWD momentum_ suvereno med najboljše v razredu - RTVSLO.si.html", "r","utf-8").read()
-
-
-#regex_rtvslo(rtvslo1)
-
-overstock1 = codecs.open("../input-extraction/overstock.com/jewelry01.html","r").read()
-overstock2 = codecs.open("../input-extraction/overstock.com/jewelry02.html","r").read()
-
-#regex_overstock(overstock2)
-
-mimovrste1 = codecs.open("../input-extraction/mimovrste.com/Apple MacBook Pro prenosnik, 14.2, 512 GB, Space Grey (mkgp3cr_a) _ mimovrste=).html", "r","utf-8").read()
-mimovrste2 = codecs.open("../input-extraction/mimovrste.com/Apple MacBook 13 Air prenosnik, 256 GB, Space Gray, SLO KB (MGN63CR_A) _ mimovrste=).html", "r","utf-8").read()
-
-#regex_mimovrste(mimovrste1)
+    # Store to json file
+    #out_file = open("../outputs/regex/mimovrste2.json", "w", encoding='utf8')
+    #json.dump(output, out_file, indent=3,separators=(', ', ' : '), sort_keys=False, ensure_ascii=False)
+    #out_file.close()

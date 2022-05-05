@@ -8,3 +8,5 @@
 /pa1/tests
 
 # pa2
+/pa2/implementation-extraction/__pycache__
+/pa2/implementation-extraction/roadRunner.py

@@ -4,24 +4,24 @@
 ## Three different approaches:
 - A. Using regular expressions
 - B. Using XPath
-- C. RoadRunner-like Wrapper implementation
+- C. RoadRunner Wrapper implementation
 
 ## Required libraries for python:
 ```sh
-hashlib
-selenium
-socket
-url_normalize
-urllib
+lxml
+bs4
+json
 ```
 
 
 ## Instructions:
 
 
-Run code:
+Run code inside implemetaction-extraction folder with valid parameter to choose one of three different approaches - A (regular expressions), B (XPath) or C (RoadRunner):
 ```sh
-python _.py
+python run-extraction.py A
+python run-extraction.py B
+python run-extraction.py C
 ```
 
 
