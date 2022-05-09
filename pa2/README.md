@@ -2,15 +2,16 @@
 **Structured data extraction from the Web**
 
 ## Three different approaches:
-- A. Using regular expressions - done
-- B. Using XPath - done
-- C. RoadRunner Wrapper implementation - in progress
+- A. Using regular expressions
+- B. Using XPath
+- C. RoadRunner Wrapper implementation
 
 ## Required libraries for python:
 ```sh
 lxml
 bs4
 json
+HTMLParser
 ```
 
 
