@@ -7,6 +7,11 @@ from stopwords import stop_words_slovene
 import sys
 import time
 
+NO_SNIPPETS = 2
+NO_RESULTS = 4
+
+folder = "../input-indexing/"
+
 # tokens blacklist
 blacklist = [
     '[document]',
@@ -31,12 +36,14 @@ blacklist = [
     # https://matix.io/extract-text-from-webpage-using-beautifulsoup-and-python/
 ]
 
+
 # Index words in html file
 def search_page(html, doc, query):
 
-    # Tokenize html file (set it to lowercase)
+    # Tokenize html file (don't use lowercase at this point - it's used for output)
     tokens = nltk.word_tokenize(html.text.lower())
-        
+    #print(tokens)
+
     # Remove unwanted tokens
     cleaned_tokens = []
     for token in tokens:
@@ -49,37 +56,32 @@ def search_page(html, doc, query):
                     # Remove tokens on blacklist
                     if token not in blacklist:
                             cleaned_tokens.append(token)
-    
-    #print(cleaned_tokens)
-    #print(len(cleaned_tokens))
 
-
+    page = []
     checked_tokens = []
-    posting = []
-    for t in cleaned_tokens:
+    index = []
+    freq = int(0)
+    for t in tokens:
 
         if t in query:
 
-            # Check if token was already inserted in db
+            # Check if token was already checked
             if t in checked_tokens:
                 continue
             else:
                 checked_tokens.append(t)
 
             # Check all tokens for iterations
-            index = []
-            freq = int(0)
-            for i in range(len(cleaned_tokens)):
-                if cleaned_tokens[i] == t:
+            for i in range(len(tokens)):
+                if tokens[i] == t:
                     index.append(i)
                     freq += 1
 
-            posting.append(t, doc, freq, index)
-            #print("token: ", t, " index: ", index, " freq: ", freq)
-    if posting == []:
-        return None
-    else:
-        return posting
+
+    if freq != 0:
+        page = [doc, freq, index]
+    
+    return page
 
 def basic_search(query):
     pages = []
@@ -93,25 +95,162 @@ def basic_search(query):
                 file_r = open(path, 'r', encoding="utf8")
                 html = BeautifulSoup(file_r.read(), 'lxml')
 
-                posting = search_page(html, file, query)
+                #print("Searching file: ", file)
+                page = search_page(html, file, query)
 
-                if posting is not None:
-                    pages.append(posting)
+                if page != []:
+                    pages.append(page)
 
-    # Order?
-    return pages
+    # Sort - descending          
+    pages.sort(key=lambda c: c[1], reverse=True)
+
+    return pages, len(pages)
+
+def format_output(data, query):
+
+    snippets = []
+    doc = []
+
+    # Format 6 snippets for 5 results
+    for i, row in enumerate(data):
+        # Correct document names (add folder - i didn't store this in db)
+        if row[0].startswith("e-prostor"):
+            document = "e-prostor.gov.si/"+row[0]
+        if row[0].startswith("e-uprava"):
+            document = "e-uprava.gov.si/"+row[0]
+        if row[0].startswith("evem"):
+            document = "evem.gov.si/"+row[0]
+        if row[0].startswith("podatki"):
+            document = "podatki.gov.si/"+row[0]
+        doc.append(document)
+
+        # read the document
+        path = os.path.join(folder,document)
+        file_r = open(path, 'r', encoding="utf8")
+        html = BeautifulSoup(file_r.read(), features="lxml").getText(separator=" ")
+          
+
+        # Tokenize html file (don't set it to lower because it's used for snippets!)
+        tokens = nltk.word_tokenize(html)
+        #print(tokens)
+
+
+        # Format snippets
+        snippets_doc = format_snippets(query, tokens)
+        snippets.append(snippets_doc)
+        # Format only 5 snippets
+        if i == NO_RESULTS:
+            break
+        
+
+
+    return snippets, doc
+
+def format_snippets(query, tokens):
+    snippets = ""
+    
+    index = []
+    for q in query:
+        # If stopwords in query - don't use them
+        if q not in stop_words_slovene:
+            for i in range(len(tokens)):
+                # Use lower here (dont overwrite tokens)
+                if tokens[i].lower() == q.lower():
+                    index.append(i)
+
+    
+
+    for i, idx in enumerate(index):
+        
+        # Set down range
+        if idx == 0:
+            limit_d = 0
+        elif idx - 1 == 0:
+            limit_d = 1
+        elif idx -2 == 0:
+            limit_d = 2
+        else:
+            limit_d = 3
+
+        # Set upper range
+        if idx + 3 <= len(tokens):
+            limit_u = 3
+        elif idx + 2 <= len(tokens):
+            limit_u = 2
+        elif idx + 3 <= len(tokens):
+            limit_u = 2
+        else:
+            limit_u = 0
+
+        # Get tokens for snippets
+        snippets += " ".join(tokens[idx - limit_d:idx + limit_u])
+
+
+        # Remove unvated chars
+        snippets = snippets.replace(" , ",", ")
+        snippets = snippets.replace(" . ",". ")
+        snippets = snippets.replace(" ( "," (")
+        snippets = snippets.replace(" ) ",") ")
+        snippets = snippets.replace("., ",". ")
+        snippets = snippets.replace(" ? ","? ")
+        snippets = snippets.replace(" ! ","! ")
+        snippets = snippets.replace(" : ",": ")
+        if snippets.startswith(")"):
+            snippets = snippets[1:]
+        snippets = snippets.replace("  "," ")
+        if snippets.endswith("("):
+            snippets = snippets[:-1]
+
+        # Set ... (start)
+        if idx != 0 and i == 0:
+            snippets = " ... " + snippets
+        
+        # Set ... except if it ends
+        if idx == len(tokens):
+            pass
+        else:
+            snippets += " ... "
+
+        # Limit number of snippets (set above as global)
+        if i == NO_SNIPPETS:
+            break
+
+    return snippets
 
 
 if __name__ == '__main__':
-    query = sys.argv[1]
+    input_query = sys.argv[1:]
 
-    # !! handle multiple words
+    # Start timer
+    start_time = time.time()
+
+    # set all words to lowercase
+    query = []
+    for q in input_query:
+        # If stopwords in query - don't use them for search
+        if q not in stop_words_slovene:
+            query.append(q.lower())
 
     # basic search
-    start_time = time.time()
-    output = basic_search(query)
-    search_time = time.time() - start_time
+    output, n_results = basic_search(query)
 
-    # rabis 5 zadetkov, 6 snippetov (če obstajajo?)
-    for row in output:
-        print(f"\tHits: {row[1]}\n\t\tDoc: '{row[0]}'\n\t\tIndexes: {row[2]}")
+    # Format output
+    snippets, doc = format_output(output, input_query)
+    #print(snippets)
+
+
+    # Stop timer
+    search_time = (time.time() - start_time)*1000 # [ms]
+    
+
+    # Print result
+    print("Results for a query: \"{}\"".format(" ".join(input_query)),"\n\n\t{} results found in {} ms.".format(n_results,round(search_time,2)))
+    print("\n\n\tFrequencies\tDocument\t\t\t\t\tSnippet")
+    print("\t-----------\t-------------------------------------------\t-----------------------------------------------------------")
+    for i, row in enumerate(output):
+ 
+        print("\t{}".format(row[1]),"\t\t{}".format(doc[i]),"\t\t{}".format(snippets[i]))
+        
+        # Print only top 5 results
+        if i == NO_RESULTS:
+            break

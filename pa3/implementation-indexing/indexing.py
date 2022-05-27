@@ -1,32 +1,11 @@
 import sqlite3
 import os
 import nltk
-#nltk.download()
 import string
 from bs4 import BeautifulSoup
 from nltk.corpus import stopwords
+
 from stopwords import stop_words_slovene
-
-#from html.parser import HTMLParser
-
-#tokens_all = []
-
-#class RR_HTMLParse(HTMLParser):
- #   def handle_starttag(self, tag: str, attrs: list[tuple[str]]) -> None:
-  #      #return super().handle_starttag(tag, attrs)
-   #     tokens_all.append(["starttag",tag])
-    #    #print("starttag: ",tag)
-
-    #def handle_endtag(self, tag) -> None:
-     #   #return super().handle_endtag(tag)
-      #  tokens_all.append(["endtag",tag])
-       # #print("endtag: ",tag)
-
-    #def handle_data(self, data: str) -> None:
-    #    #return super().handle_data(data)
-     #   if data != ' ':
-      #      tokens_all.append(["data", data])
-       #     print("data: ", data)
 
 # tokens blacklist
 blacklist = [
@@ -91,15 +70,17 @@ def insert_data(word, doc, freq, index):
         sql = "INSERT INTO IndexWord VALUES (?)"
         c.execute(sql, (word,))
         #print("last word id: ",c.lastrowid)
+
         # Save (commit) the changes
         conn.commit()
     except Exception as e:
         print("Word already exists in db", e)
 
-    # Insert info into db (no need for try)
+    # Insert info into db (no need for try method)
     sql = "INSERT INTO Posting VALUES (?,?,?,?)"
     c.execute(sql, (word, doc, freq, index,))
     #print("last info id: ",c.lastrowid)
+
     # Save (commit) the changes
     conn.commit()
     
@@ -113,23 +94,6 @@ def index_words(html, doc):
     #print(tokens)
     #print(len(tokens))
     #print ("END of uncleaned tokens ------------")
-
-    # Activate parser
-    #parser = RR_HTMLParse()
-
-    # Get tokens
-    #input_tokens = []
-    #parser.feed(html)
-    #tokens_alltags = list(tokens_all)
-    #tokens_all.clear()
-    #if tokens_alltags[0] == "data":
-    #    input_tokens.append(tokens_alltags[1])
-    #print(input_tokens)
-
-    #tokens = []
-    #for input in input_tokens:
-    #    part_tokens = nltk.word_tokenize(input.lower())
-    #    tokens.append(part_tokens)
     
     # Remove unwanted tokens
     cleaned_tokens = []
@@ -169,12 +133,8 @@ def index_words(html, doc):
 
         # Write to db
         insert_data(t, doc, freq, str(index))
-
-
+    
         
-        
-
-
 # Iterate over folders in input-indexing
 input_indexing = ["../input-indexing/e-prostor.gov.si","../input-indexing/e-uprava.gov.si","../input-indexing/evem.gov.si","../input-indexing/podatki.gov.si"]
 for folder in input_indexing:
@@ -186,17 +146,6 @@ for folder in input_indexing:
             html = BeautifulSoup(file_r.read(), 'lxml')
 
             index_words(html, file)
-
-## OUT
-#path = "../input-indexing/e-prostor.gov.si\e-prostor.gov.si.1.html"
-#file = open(path, 'r', encoding="utf8")
-#html = BeautifulSoup(file.read(), 'lxml')
-#html = codecs.open(path, "r","utf-8").read()
-#filename = "e-prostor.gov.si.1.html"
-
-
-#index_words(html, filename)
-## end - OUT
 
 
 # End - close the connection
