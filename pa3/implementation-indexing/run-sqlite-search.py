@@ -33,7 +33,7 @@ if __name__ == '__main__':
     # sqlite search
     start_time = time.time()
     output = sqlite_search(query)
-    search_time = time.time() - start_time
+    search_time = time.time() - start_time # vse
 
     # rabis 5 zadetkov, 6 snippetov (če obstajajo?)
     for row in output:
