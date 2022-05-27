@@ -108,7 +108,7 @@ def insert_data(word, doc, freq, index):
 def index_words(html, doc):
 
 
-    # Tokenize html file (set it to lowercase)
+    # Tokenize html file (and set it to lowercase)
     tokens = nltk.word_tokenize(html.text.lower())
     #print(tokens)
     #print(len(tokens))
