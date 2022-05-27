@@ -7,13 +7,16 @@
 /pa1/crawler/old
 /pa1/tests
 
+
 # pa2
 /pa2/implementation-extraction/__pycache__
 /pa2/test_wrappers
 /pa2/implementation-extraction/roadRunner copy.py
+
 
 # pa3
 /pa3/SQLite database
 /pa3/implementation-indexing/indexing-test.py
 /pa3/implementation-indexing/__pycache__
 /pa3/implementation-indexing/test_search.py
+/pa3/implementation-indexing/db_query.py

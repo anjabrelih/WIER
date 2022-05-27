@@ -138,7 +138,7 @@ def index_words(html, doc):
 # Iterate over folders in input-indexing
 input_indexing = ["../input-indexing/e-prostor.gov.si","../input-indexing/e-uprava.gov.si","../input-indexing/evem.gov.si","../input-indexing/podatki.gov.si"]
 for folder in input_indexing:
-    # Interate over files
+    # read each file
     for file in os.listdir(folder):
         if file.endswith(".html"):
             path = os.path.join(folder,file)

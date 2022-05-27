@@ -7,8 +7,8 @@ import nltk
 
 from stopwords import stop_words_slovene
 
-
-NO_SNIPPETS = 2
+# Set number of results and snippets in the output
+NO_SNIPPETS = 5
 NO_RESULTS = 4
 
 
@@ -43,7 +43,7 @@ def format_output(data, query):
     snippets = []
     doc = []
 
-    # Format 6 snippets for 5 results
+    # Format results and snippets
     for i, row in enumerate(data):
         # Correct document names (add folder - i didn't store this in db)
         if row[1].startswith("e-prostor"):
@@ -128,6 +128,7 @@ def format_snippets(query, tokens):
         snippets = snippets.replace(" ? ","? ")
         snippets = snippets.replace(" ! ","! ")
         snippets = snippets.replace(" : ",": ")
+        snippets = snippets.replace("  "," ")
         if snippets.startswith(")"):
             snippets = snippets[1:]
         snippets = snippets.replace("  "," ")
