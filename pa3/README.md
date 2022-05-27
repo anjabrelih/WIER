@@ -25,10 +25,18 @@ lxml
 ## Instructions:
 
 
-Run code inside implemetaction-indexing folder:
+Run code inside *implemetaction-indexing* folder:
 - (A) data processing with indexing:
 ```sh
 python indexing.py
+```
+- (B) data retrieval with inverted index:
+```sh
+python run-sqlite-search.py [SEARCH PARAMETERS]
+```
+- (C) data retrieval without inverted index:
+```sh
+python run-basic-search.py [SEARCH PARAMETERS]
 ```
 
 

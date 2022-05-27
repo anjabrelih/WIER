@@ -138,7 +138,7 @@ def format_output(data, query):
         # Format snippets
         snippets_doc = format_snippets(query, tokens)
         snippets.append(snippets_doc)
-        # Format only 5 snippets
+        # Format only n snippets
         if i == NO_RESULTS:
             break
         
@@ -251,6 +251,6 @@ if __name__ == '__main__':
  
         print("\t{}".format(row[1]),"\t\t{}".format(doc[i]),"\t\t{}".format(snippets[i]))
         
-        # Print only top 5 results
+        # Print only top set n results
         if i == NO_RESULTS:
             break
