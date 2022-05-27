@@ -7,13 +7,22 @@
 - (C) data retrieval without inverted index
 
 ## File structure:
-- implementation-indexing:
-contains indexing.py (data processing with indexing), run-sqlite-search.py (data retrieval with inverted index), run-basic-search.py (data retrieval without inverted index), SQLite database file generated from indexing.py (inverted-index.db) and list of stopwords (stopwords.py)
-- input-indexing:
-contains html files from four different domains (e-prostor.gov.si, e-uprava.gov.si, evem.gov.si and podatki.gov.si)
+**implementation-indexing:**
+- indexing.py (data processing with indexing)
+- run-sqlite-search.py (data retrieval with inverted index)
+- run-basic-search.py (data retrieval without inverted index)
+- inverted-index.db (SQLite database file generated from indexing.py)
+- stopwords.py (list of Slovene stopwords)
+
+**input-indexing:**\
+contains html files for data processing and retrieval in four folders.
+- e-prostor.gov.si
+- e-uprava.gov.si
+- evem.gov.si
+- podatki.gov.si
 
 
-## Required libraries for python:
+## Required libraries:
 ```sh
 sqlite3
 nltk
@@ -21,11 +30,10 @@ bs4
 lxml
 ```
 
-
 ## Instructions:
 
 
-Run code inside *implemetaction-indexing* folder:
+Run code inside **implemetaction-indexing** folder:
 - (A) data processing with indexing:
 ```sh
 python indexing.py
