@@ -2,13 +2,16 @@ import lxml
 from lxml.html.clean import Cleaner
 from html.parser import HTMLParser
 import os
+import re
+import codecs
+import pdb
 
 tokens = []
 
 class RR_HTMLParse(HTMLParser):
     def handle_starttag(self, tag: str, attrs: list[tuple[str]]) -> None:
         #return super().handle_starttag(tag, attrs)
-        tokens.append(["starttag",tag])
+        tokens.append(["starttag",tag, attrs])
         #print("starttag: ",tag)
 
     def handle_endtag(self, tag) -> None:
@@ -23,10 +26,10 @@ class RR_HTMLParse(HTMLParser):
             #print("data: ", data)
 
 
-def startRR(rtvslo1,rtvslo2,overstock1,overstock2,mimovrste1,mimovrste2):
+def startRR(rtvslo1,rtvslo2,overstock1,overstock2,mimovrste1,mimovrste2,test1,test2):
 
     # User input for type of pages:
-    user_input = input("Type 1 for rtvslo; 2 for overstock or 3 for mimovrste: ")
+    user_input = input("Type 1 for rtvslo; 2 for overstock, 3 for mimovrste or 4 for test: ")
 
     # Clean chosen pages
     if user_input == "1":
@@ -44,6 +47,11 @@ def startRR(rtvslo1,rtvslo2,overstock1,overstock2,mimovrste1,mimovrste2):
         page1 = mimovrste1
         page2 = mimovrste2
         name = "mimovrste"
+    elif user_input == "4":
+        #print("You chose test.")
+        page1 = test1
+        page2 = test2
+        name = "test"
     else:
         print("Parameter you entered is invalid. Run the code again.")
 
@@ -51,7 +59,12 @@ def startRR(rtvslo1,rtvslo2,overstock1,overstock2,mimovrste1,mimovrste2):
     # Clean pages
     page1 = clean_page(page1)
     page2 = clean_page(page2)
-    print(page1)
+    #print("---------------")
+    #print(page1)
+    #print("---------------")
+    #print("---------------")
+    #print(page2)
+    #print("---------------")
 
     # Activate parser
     parser = RR_HTMLParse()
@@ -59,12 +72,12 @@ def startRR(rtvslo1,rtvslo2,overstock1,overstock2,mimovrste1,mimovrste2):
     # Get tokens
     parser.feed(page1)
     tokens1 = list(tokens)
-    #print("TOKENS 1: ",tokens1)
+    print("TOKENS 1: ",tokens1)
     tokens.clear()
 
     parser.feed(page2)
     tokens2 = list(tokens)
-    #print("TOKENS 2: ", tokens2)
+    print("TOKENS 2: ", tokens2)
     tokens.clear()
 
     #print(tokens1)
@@ -77,7 +90,7 @@ def startRR(rtvslo1,rtvslo2,overstock1,overstock2,mimovrste1,mimovrste2):
 
     # Create final wrapper
     final_wrapper = create_wrapper(wrapper)
-    print(final_wrapper)
+    #print(final_wrapper)
 
     # Store to html file
     file = "../outputs/roadRunner/"+name+"_wrapper.html"
@@ -101,12 +114,14 @@ def roadRunner(tokens1, tokens2, w, s, wrapper):
     if check_match(t1, t2):
         # Match
         wrapper.append(t1)
+        print("Found match")
         return roadRunner(tokens1, tokens2, w+1, s+1, wrapper)
     else:
         # Doesnt match
         if t1[0] == "data" and t2[0] == "data":
             # Content mismatch (#PCDATA)
             wrapper.append(["data","#PCDATA"])
+            print("Found #PCDATA")
             return roadRunner(tokens1, tokens2, w+1, s+1, wrapper)
 
         else:
@@ -118,15 +133,17 @@ def roadRunner(tokens1, tokens2, w, s, wrapper):
             f_t2 = tokens2[s-1]
 
             # page 1
-            if f_t1[0] == "endtag" and t1[0] == "starttag" and f_t1[0] == t1[0]:
+            if f_t1[0] == "endtag" and t1[0] == "starttag" and f_t1[1] == t1[1]:
                 # Check for end of found iteration
                 flag = False
                 i = w
 
-                while i < len(tokens1):
+                print("Found iteration 1")
+
+                while i <= len(tokens1):
                     if tokens1[i][0] == "endtag" and tokens1[i][1] == tokens1[w][1]:
                         flag = True
-                        #print("FOUND ITERATION 1 end")
+                        print("FOUND ITERATION 1 end")
                         break
                     i = i+1
 
@@ -140,7 +157,7 @@ def roadRunner(tokens1, tokens2, w, s, wrapper):
                     while j > 0:
                         if tokens1[j][0] == "starttag" and tokens1[j][1] == tokens1[w-1][1]:
                             flag = True
-                            #print("FOUND ITERATION 1 start")
+                            print("FOUND ITERATION 1 start")
                             break
                         j = j-1
 
@@ -167,15 +184,17 @@ def roadRunner(tokens1, tokens2, w, s, wrapper):
     #print(wrapper)
 
             # page 2
-            if f_t2[0] == "endtag" and t2[0] == "starttag" and f_t2[0] == t2[0]:
+            if f_t2[0] == "endtag" and t2[0] == "starttag" and f_t2[1] == t2[1]:
                 # Check for end of found iteration
                 flag = False
                 i = s
 
+                print("Found iteration 2")
+
                 while i < len(tokens2):
                     if tokens2[i][0] == "endtag" and tokens2[i][1] == tokens2[s][1]:
                         flag = True
-                        #print("FOUND ITERATION 2 end")
+                        print("FOUND ITERATION 2 end")
                         break
                     i = i+1
 
@@ -189,22 +208,34 @@ def roadRunner(tokens1, tokens2, w, s, wrapper):
                     while j > 0:
                         if tokens2[j][0] == "starttag" and tokens2[j][1] == tokens2[s-1][1]:
                             flag = True
-                            #print("FOUND ITERATION 2 start")
+                            print("FOUND ITERATION 2 start")
                             break
                         j = j-1
 
                     if flag:
                         # Create wrapper for iterations
                         iteration1 = tokens2[j:s]
+                        print(tokens2[j:s])
                         #print("ITERATION 1: ",iteration1)
                         iteration2 = tokens2[s:i+1]
+                        print(tokens2[s:i+1])
                         #print("ITERATION 2: ",iteration2)
 
                         # Subwrapper
                         subwrapper = roadRunner(iteration1,iteration2, 0, 0, [])
+                        #print("SUBWRAP")
+                        #print(subwrapper)
 
                         if subwrapper != []:
-                            wrapper.append(subwrapper)
+                            # Mark start and end of iteration (if ends with endtag)
+                            if subwrapper[-1][-2] == "endtag":
+                                subwrapper[0][0] = "it-start"
+                                subwrapper[-1][-2] = "it-end"
+
+                            # Append subwrapper
+                            for sub in subwrapper:
+                                print(sub)
+                                wrapper.append(sub)
                             return roadRunner(tokens1, tokens2, w, i+1, wrapper)
                     else:
                         iteration = False               
@@ -212,27 +243,78 @@ def roadRunner(tokens1, tokens2, w, s, wrapper):
                     iteration = False
             else:
                 iteration = False
-
+            
 
             #check for optional items
             if iteration == False:
+                
                 if check_match(tokens1[w+1], t2):
-                    optional_item = ["optional", " ".join(["(", t1[1],")(optional?)"])]
-                    wrapper.append(optional_item)
+                    #print("one match case 1")
+                    t1[0] = "optional"
+                    #t1[1] = " ".join(["( ", t1[1]," )?"])
+                    wrapper.append(t1)
                     return roadRunner(tokens1, tokens2, w+1, s, wrapper)
                 elif check_match(t1, tokens2[s+1]):
-                    optional_item = ["optional", " ".join(["(", t2[1],")(optional?)"])]
-                    wrapper.append(optional_item)
+                    t2[0] = "optional"
+                    #t2[1] = " ".join(["( ", t2[1]," )?"])
+                    wrapper.append(t2)
                     return roadRunner(tokens1, tokens2, w, s+1, wrapper)
+                elif t1[1] == "img" and tokens1[w+1][0] == "endtag":
+                    # Image is separated to start and endtag
+                    t1[0] = "optional"
+                    wrapper.append(t1)
+                    return roadRunner(tokens1, tokens2, w+2, s, wrapper)
+                elif t2[1] == "img" and tokens2[s+1][0] == "endtag":
+                    # Image is separated to start and endtag
+                    t2[0] = "optional"
+                    wrapper.append(t2)
+                    return roadRunner(tokens1, tokens2, w, s+2, wrapper)
                 else:
-                   return wrapper
+                    # Check where optional items stop page 1 !!!!!!!
+                    for t in range(w+2,len(tokens1)):
+                        if check_match(tokens1[t], t2):
+                            for a in range(w,t+1):
+                                if a == w:
+                                    t_start = tokens1[a]
+                                    t_start[0] = "op_start"
+                                    wrapper.append(t_start)
+                                elif a == t:
+                                    t_stop = tokens1[a]
+                                    t_stop[0] = "op_end"
+                                    wrapper.append(t_stop)
+                                else:
+                                    wrapper.append(tokens1[a])
+                                return roadRunner(tokens1, tokens2, t, s, wrapper)      
 
+                    # Check where optional items stop page 2 !!!!!!!
+                    for t in range(s+2,len(tokens2)):
+                        if check_match(t1, tokens2[t]):
+                            for a in range(s,t+1):
+                                if a == s:
+                                    t_start = tokens1[a]
+                                    t_start[0] = "op_start"
+                                    wrapper.append(t_start)
+                                elif a == t:
+                                    t_stop = tokens1[a]
+                                    t_stop[0] = "op_end"
+                                    wrapper.append(t_stop)
+                                else:
+                                    wrapper.append(tokens1[a])
+                            return roadRunner(tokens1, tokens2, w, t, wrapper)      
+                    
     return wrapper
-    
+
+
     
 
 def check_match(t1,t2):
     if t1[0] == t2[0] and t1[1] == t2[1]:
+        if t1[0] == "starttag":
+        # check if attributes match
+            if t1[2] == t2[2]:
+                return True
+            else:
+                return False
         return True
     else:
         return False
@@ -240,12 +322,28 @@ def check_match(t1,t2):
 
 def clean_page(page):
     # Get rid of js and other nuisances :)
-    cleaner = Cleaner()
-    cleaner.javascript = True # This is True because we want to activate the javascript filter
-    cleaner.style = True      # This is True because we want to activate the styles & stylesheet filter
+    #cleaner = Cleaner()
+    #cleaner.javascript = True # This is True because we want to activate the javascript filter
+    #cleaner.style = True      # This is True because we want to activate the styles & stylesheet filter
     #cleaner.kill_tags = ['a', 'style', 'script', 'head', 'img', 'iframe', 'nav', 'svg', 'figure', 'map']
 
-    page = cleaner.clean_html(page)
+    #page = cleaner.clean_html(page)
+
+    # https://stackoverflow.com/questions/8554035/remove-all-javascript-tags-and-style-tags-from-html-with-python-and-the-lxml-mod
+    clean_script = r'<[ ]*script.*?\/[ ]*script[ ]*>'
+    page = re.sub(clean_script, '', page, flags=(re.IGNORECASE | re.MULTILINE | re.DOTALL))
+    clean_style = r'<[ ]*style.*?\/[ ]*style[ ]*>'
+    page = re.sub(clean_style, '', page, flags=(re.IGNORECASE | re.MULTILINE | re.DOTALL))
+    clean_meta = r'<[ ]*meta.*?>'
+    page = re.sub(clean_meta, '', page, flags=(re.IGNORECASE | re.MULTILINE | re.DOTALL))
+    clean_comment = r'<[ ]*!--.*?--[ ]*>'
+    page = re.sub(clean_comment, '', page, flags=(re.IGNORECASE | re.MULTILINE | re.DOTALL))
+    clean_doctype = r'<[ ]*\![ ]*DOCTYPE.*?>'
+    page = re.sub(clean_doctype, '', page, flags=(re.IGNORECASE | re.MULTILINE | re.DOTALL))
+
+    #print("CLEANER ----------------")
+    #print(page)
+    #print("END CLEANER ----------------")
 
     page = page.split()
     page = " ".join(page)
@@ -260,11 +358,66 @@ def create_wrapper(wrapper):
     ufre = ""
 
     for token in wrapper:
+        #print(token)
         if token[0] == "starttag":
-            ufre += "".join(["<", token[1],">\n"])
+            if token[2] == []:
+                ufre += "".join(["<", token[1], ">\n"])
+            else:
+                print(token[2])
+                # get attributes if exist
+                attributes = ""
+                for el in token[2]:
+                    at = "".join([el[0], "=\"",el[1],"\""])
+                    attributes += "".join([" ",at])
+                ufre += "".join(["<", token[1], attributes,">\n"])
         elif token[0] == "endtag":
-            ufre += "".join(["</", token[1],">\n"]) 
+            ufre += "".join(["</", token[1],">\n"])
+        elif token[0] == "it-start":
+            # Iteration start
+            try:
+                # get attributes if exist
+                attributes = ""
+                for el in token[2]:
+                    at = "".join([el[0], "=\"",el[1],"\""])
+                    attributes += "".join([" ",at])
+                ufre += "".join(["(+ <", token[1], attributes,">\n"]) # Added + after ( bc there are multiple lines
+            except:
+                # no attributes
+                ufre += "".join(["(+ <", token[1],">\n"])
+        elif token[0] == "it-end":
+            # Iteration end
+            ufre += "".join(["<", token[1],"> )+\n"])
+        elif token[0] == "optional":
+            # Single optional item
+            try:
+                # get attributes if exist
+                attributes = ""
+                for el in token[2]:
+                    at = "".join([el[0], "=\"",el[1],"\""])
+                    attributes += "".join([" ",at])
+                ufre += "".join(["( <", token[1], attributes,"> )?\n"])
+            except:
+                # no attributes
+                ufre += "".join(["( <", token[1],"> )?\n"])
+        elif token[0] == "op_start":
+            # Optional items - start
+            try:
+                # get attributes if exist
+                attributes = ""
+                for el in token[2]:
+                    at = "".join([el[0], "=\"",el[1],"\""])
+                    attributes += "".join([" ",at])
+                ufre += "".join(["(? <", token[1], attributes,">\n"]) # Added ? after ( bc there are multiple lines
+            except:
+                # no attributes
+                ufre += "".join(["(? <", token[1],">\n"])
+        elif token[0] == "op_end":
+            # Iteration end
+            ufre += "".join(["<", token[1],"> )?\n"])
         else:
+            # Data
             ufre += token[1]+"\n"
+            
+        #print(ufre)
 
     return ufre

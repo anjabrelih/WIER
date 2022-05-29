@@ -16,6 +16,8 @@ overstock2 = codecs.open("../input-extraction/overstock.com/jewelry02.html","r",
 mimovrste1 = codecs.open("../input-extraction/mimovrste.com/Apple MacBook Pro prenosnik, 14.2, 512 GB, Space Grey (mkgp3cr_a) _ mimovrste=).html", "r","utf-8").read()
 mimovrste2 = codecs.open("../input-extraction/mimovrste.com/Apple MacBook 13 Air prenosnik, 256 GB, Space Gray, SLO KB (MGN63CR_A) _ mimovrste=).html", "r","utf-8").read()
 
+test1 = codecs.open("../input-extraction/test/test1.html", "r","utf-8").read()
+test2 = codecs.open("../input-extraction/test/test2.html", "r","utf-8").read()
 
 # User input - extraction method
 def choose_extraction(input):
@@ -53,7 +55,7 @@ def choose_extraction(input):
         xpath.xpath_mimovrste(mimovrste2)
 
     elif input == "C":
-        roadRunner.startRR(rtvslo1,rtvslo2,overstock1,overstock2,mimovrste1,mimovrste2)
+        roadRunner.startRR(rtvslo1,rtvslo2,overstock1,overstock2,mimovrste1,mimovrste2,test1,test2)
 
     else:
         print("Valid input parameters are A, B or C!")
