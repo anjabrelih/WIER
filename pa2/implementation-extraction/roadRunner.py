@@ -1,10 +1,8 @@
-import lxml
-from lxml.html.clean import Cleaner
 from html.parser import HTMLParser
 import os
 import re
-import codecs
-import pdb
+import sys
+sys.setrecursionlimit(2000)
 
 tokens = []
 
@@ -106,22 +104,27 @@ def roadRunner(tokens1, tokens2, w, s, wrapper):
     # No new tokens to compare
     if w == len(tokens1) and s == len(tokens2):
         return wrapper
-
-    t1 = tokens1[w]
-    t2 = tokens2[s]
+    try:
+        t1 = tokens1[w]
+    except:
+        t1 = tokens1[-1]
+    try:
+        t2 = tokens2[s]
+    except:
+        t2 = tokens2[-1]
 
     # Check for matching tokens
     if check_match(t1, t2):
         # Match
         wrapper.append(t1)
-        print("Found match")
+        #print("Found match")
         return roadRunner(tokens1, tokens2, w+1, s+1, wrapper)
     else:
         # Doesnt match
         if t1[0] == "data" and t2[0] == "data":
             # Content mismatch (#PCDATA)
             wrapper.append(["data","#PCDATA"])
-            print("Found #PCDATA")
+            #print("Found #PCDATA")
             return roadRunner(tokens1, tokens2, w+1, s+1, wrapper)
 
         else:
@@ -138,12 +141,12 @@ def roadRunner(tokens1, tokens2, w, s, wrapper):
                 flag = False
                 i = w
 
-                print("Found iteration 1")
+                #print("Found iteration 1")
 
                 while i <= len(tokens1):
                     if tokens1[i][0] == "endtag" and tokens1[i][1] == tokens1[w][1]:
                         flag = True
-                        print("FOUND ITERATION 1 end")
+                        #print("FOUND ITERATION 1 end")
                         break
                     i = i+1
 
@@ -157,7 +160,7 @@ def roadRunner(tokens1, tokens2, w, s, wrapper):
                     while j > 0:
                         if tokens1[j][0] == "starttag" and tokens1[j][1] == tokens1[w-1][1]:
                             flag = True
-                            print("FOUND ITERATION 1 start")
+                            #print("FOUND ITERATION 1 start")
                             break
                         j = j-1
 
@@ -172,7 +175,15 @@ def roadRunner(tokens1, tokens2, w, s, wrapper):
                         subwrapper = roadRunner(iteration1,iteration2, 0, 0, [])
 
                         if subwrapper != []:
-                            wrapper.append(subwrapper)
+                            # Mark start and end of iteration (if ends with endtag)
+                            if subwrapper[-1][-2] == "endtag":
+                                subwrapper[0][0] = "it-start"
+                                subwrapper[-1][-2] = "it-end"
+
+                            # Append subwrapper
+                            for sub in subwrapper:
+                                #print(sub)
+                                wrapper.append(sub)
                             return roadRunner(tokens1, tokens2, i+1, s, wrapper)
                     else:
                         iteration = False
@@ -189,12 +200,12 @@ def roadRunner(tokens1, tokens2, w, s, wrapper):
                 flag = False
                 i = s
 
-                print("Found iteration 2")
+                #print("Found iteration 2")
 
                 while i < len(tokens2):
                     if tokens2[i][0] == "endtag" and tokens2[i][1] == tokens2[s][1]:
                         flag = True
-                        print("FOUND ITERATION 2 end")
+                        #print("FOUND ITERATION 2 end")
                         break
                     i = i+1
 
@@ -208,17 +219,17 @@ def roadRunner(tokens1, tokens2, w, s, wrapper):
                     while j > 0:
                         if tokens2[j][0] == "starttag" and tokens2[j][1] == tokens2[s-1][1]:
                             flag = True
-                            print("FOUND ITERATION 2 start")
+                            #print("FOUND ITERATION 2 start")
                             break
                         j = j-1
 
                     if flag:
                         # Create wrapper for iterations
                         iteration1 = tokens2[j:s]
-                        print(tokens2[j:s])
+                        #print(tokens2[j:s])
                         #print("ITERATION 1: ",iteration1)
                         iteration2 = tokens2[s:i+1]
-                        print(tokens2[s:i+1])
+                        #print(tokens2[s:i+1])
                         #print("ITERATION 2: ",iteration2)
 
                         # Subwrapper
@@ -234,7 +245,7 @@ def roadRunner(tokens1, tokens2, w, s, wrapper):
 
                             # Append subwrapper
                             for sub in subwrapper:
-                                print(sub)
+                                #print(sub)
                                 wrapper.append(sub)
                             return roadRunner(tokens1, tokens2, w, i+1, wrapper)
                     else:
@@ -247,8 +258,16 @@ def roadRunner(tokens1, tokens2, w, s, wrapper):
 
             #check for optional items
             if iteration == False:
-                
-                if check_match(tokens1[w+1], t2):
+
+                if len(tokens1) < w+1:
+                    t2[0] = "optional"
+                    wrapper.append(t2)
+                    return roadRunner(tokens1, tokens2, w, s+1, wrapper)
+                elif len(tokens2) < s+1:
+                    t1[0] = "optional"
+                    wrapper.append(t1)
+                    return roadRunner(tokens1, tokens2, w+1, s, wrapper)
+                elif check_match(tokens1[w+1], t2):
                     #print("one match case 1")
                     t1[0] = "optional"
                     #t1[1] = " ".join(["( ", t1[1]," )?"])
@@ -270,37 +289,45 @@ def roadRunner(tokens1, tokens2, w, s, wrapper):
                     wrapper.append(t2)
                     return roadRunner(tokens1, tokens2, w, s+2, wrapper)
                 else:
-                    # Check where optional items stop page 1 !!!!!!!
-                    for t in range(w+2,len(tokens1)):
-                        if check_match(tokens1[t], t2):
-                            for a in range(w,t+1):
-                                if a == w:
-                                    t_start = tokens1[a]
-                                    t_start[0] = "op_start"
-                                    wrapper.append(t_start)
-                                elif a == t:
-                                    t_stop = tokens1[a]
-                                    t_stop[0] = "op_end"
-                                    wrapper.append(t_stop)
-                                else:
-                                    wrapper.append(tokens1[a])
-                                return roadRunner(tokens1, tokens2, t, s, wrapper)      
+                    # Multiple optional lines
+                    mismatch1 = t1
+                    mismatch2 = t2
+                    m_w = w+2
+                    m_s = s+2
+                    page1 = False
+                    page2 = False
 
-                    # Check where optional items stop page 2 !!!!!!!
-                    for t in range(s+2,len(tokens2)):
-                        if check_match(t1, tokens2[t]):
-                            for a in range(s,t+1):
-                                if a == s:
-                                    t_start = tokens1[a]
-                                    t_start[0] = "op_start"
-                                    wrapper.append(t_start)
-                                elif a == t:
-                                    t_stop = tokens1[a]
-                                    t_stop[0] = "op_end"
-                                    wrapper.append(t_stop)
-                                else:
-                                    wrapper.append(tokens1[a])
-                            return roadRunner(tokens1, tokens2, w, t, wrapper)      
+                    while m_w < len(tokens1):
+                        if tokens1[m_w] == mismatch2:
+                            page1 = True
+                            break
+                        m_w += 1
+
+                    while m_s < len(tokens2):
+                        if tokens2[m_s] == mismatch1:
+                            page2 = True
+                            break
+                        m_s += 1
+
+                    if page1 == True:
+                        for t1 in range(w, m_w):
+                            tokens1[t1][0] == "optional"
+                            wrapper.append(tokens1[t1])
+                            return roadRunner(tokens1, tokens2, m_w, s, wrapper)
+                    elif page2 == True:
+                        for t2 in range(s, m_s):
+                            tokens2[t2][0] == "optional"
+                            wrapper.append(tokens2[t2])
+                            return roadRunner(tokens1, tokens2, w, m_s, wrapper)
+                    else:
+                        # both elements are optional?
+                        t1[0] = "optional"
+                        wrapper.append(t1)
+                        t2[0] = "optional"
+                        wrapper.append(t2)
+                        return roadRunner(tokens1, tokens2, w+1, s+1, wrapper)
+
+
                     
     return wrapper
 
@@ -315,7 +342,8 @@ def check_match(t1,t2):
                 return True
             else:
                 return False
-        return True
+        else:
+            return True
     else:
         return False
 
