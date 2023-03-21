@@ -1,5 +1,5 @@
 # WIER Programming assignment 1
-**Multi-thread broadth-first web crawler Oskar**
+**Multi-thread breadth-first web crawler Oskar**
 
 
 
